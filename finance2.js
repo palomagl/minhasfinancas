@@ -1,5 +1,5 @@
 // Finanças 2.0 — receitas, saldo e espaços familiares.
-// Este módulo usa o Firebase NOVO da v2, nunca o projeto original.
+// Este módulo usa o Firebase existente, usando coleções exclusivas da v2.
 import { getApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, arrayUnion, deleteDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
@@ -58,23 +58,23 @@ function adjustForm(){
  show("Ajustar saldo",'<p>Informe quanto você tem agora. A diferença será registrada no histórico.</p><form id="v2Form">'+moneyInput("Saldo real (R$)")+'<button class="v2-primary">Salvar ajuste</button></form>');
  $("#v2Form").onsubmit=async e=>{e.preventDefault();const target=toCents(formValue("v2Amount"));if(!Number.isSafeInteger(target)||Math.abs(target)>99999999999)return notify("Saldo inválido.");await saveMovement({kind:"adjust",amount:target-personalBalance(),description:"Ajuste de saldo"});};
 }
-async function saveMovement(data){try{await addDoc(collection(db,"users",user.uid,"movements"),{...data,date:today(),createdAt:serverTimestamp()});root.hidden=true;notify("Salvo com sucesso.");}catch(err){console.error(err);notify("Não foi possível salvar.");}}
+async function saveMovement(data){try{await addDoc(collection(db,"v2_users",user.uid,"movements"),{...data,date:today(),createdAt:serverTimestamp()});root.hidden=true;notify("Salvo com sucesso.");}catch(err){console.error(err);notify("Não foi possível salvar.");}}
 function historyView(){
  const items=[...movements].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
  show("Entradas e ajustes",items.length?items.map(x=>'<div class="v2-entry"><span>'+escapeHtml(x.description)+'<small>'+escapeHtml(x.date||"")+'</small></span><b>'+brl(x.amount)+'</b><button data-del="'+escapeHtml(x.id)+'" aria-label="Excluir">×</button></div>').join(""):'<p>Nenhuma movimentação registrada.</p>');
- root.querySelectorAll("[data-del]").forEach(btn=>btn.onclick=async()=>{if(!confirm("Excluir esta movimentação? O saldo será recalculado."))return;try{await deleteDoc(doc(db,"users",user.uid,"movements",btn.dataset.del));historyView();}catch(e){notify("Falha ao excluir.");}});
+ root.querySelectorAll("[data-del]").forEach(btn=>btn.onclick=async()=>{if(!confirm("Excluir esta movimentação? O saldo será recalculado."))return;try{await deleteDoc(doc(db,"v2_users",user.uid,"movements",btn.dataset.del));historyView();}catch(e){notify("Falha ao excluir.");}});
 }
 function watchPersonal(){
  unsubs.forEach(fn=>fn());unsubs=[];
- unsubs.push(onSnapshot(collection(db,"users",user.uid,"months"),snap=>{months=snap.docs.map(d=>d.data());updateOverview();},err=>console.error(err)));
- unsubs.push(onSnapshot(collection(db,"users",user.uid,"movements"),snap=>{movements=snap.docs.map(d=>({id:d.id,...d.data()}));updateOverview();},err=>notify("Não foi possível carregar as entradas.")));
- unsubs.push(onSnapshot(query(collection(db,"families"),where("memberIds","array-contains",user.uid)),snap=>{families=snap.docs.map(d=>({id:d.id,...d.data()}));if(familyId&&!families.some(f=>f.id===familyId))selectFamily(null);updateOverview();},err=>console.error(err)));
+ unsubs.push(onSnapshot(collection(db,"v2_users",user.uid,"months"),snap=>{months=snap.docs.map(d=>d.data());updateOverview();},err=>console.error(err)));
+ unsubs.push(onSnapshot(collection(db,"v2_users",user.uid,"movements"),snap=>{movements=snap.docs.map(d=>({id:d.id,...d.data()}));updateOverview();},err=>notify("Não foi possível carregar as entradas.")));
+ unsubs.push(onSnapshot(query(collection(db,"v2_families"),where("memberIds","array-contains",user.uid)),snap=>{families=snap.docs.map(d=>({id:d.id,...d.data()}));if(familyId&&!families.some(f=>f.id===familyId))selectFamily(null);updateOverview();},err=>console.error(err)));
 }
 function selectFamily(id){
  familyUnsub?.();familyMembersUnsub?.();familyId=id;familyExpenses=[];members=[];
  if(id){
- familyUnsub=onSnapshot(collection(db,"families",id,"expenses"),s=>{familyExpenses=s.docs.map(d=>({id:d.id,...d.data()}));renderFamilyList();},e=>console.error(e));
- familyMembersUnsub=onSnapshot(collection(db,"families",id,"members"),s=>{members=s.docs.map(d=>({id:d.id,...d.data()}));renderFamilyList();},e=>console.error(e));
+ familyUnsub=onSnapshot(collection(db,"v2_families",id,"expenses"),s=>{familyExpenses=s.docs.map(d=>({id:d.id,...d.data()}));renderFamilyList();},e=>console.error(e));
+ familyMembersUnsub=onSnapshot(collection(db,"v2_families",id,"members"),s=>{members=s.docs.map(d=>({id:d.id,...d.data()}));renderFamilyList();},e=>console.error(e));
  }
  updateOverview();
 }
@@ -92,8 +92,8 @@ function familyManager(){
 function createFamilyForm(){
  show("Criar família",'<form id="v2Form"><label>Nome<input id="v2Name" maxlength="50" placeholder="Nossa casa" required></label><button class="v2-primary">Criar família</button></form>');
  $("#v2Form").onsubmit=async e=>{e.preventDefault();const name=formValue("v2Name");if(!name)return;try{
- const ref=doc(collection(db,"families"));await setDoc(ref,{name,ownerId:user.uid,memberIds:[user.uid],createdAt:serverTimestamp()});
- await setDoc(doc(db,"families",ref.id,"members",user.uid),{name:user.displayName||"Eu",joinedAt:serverTimestamp()});
+ const ref=doc(collection(db,"v2_families"));await setDoc(ref,{name,ownerId:user.uid,memberIds:[user.uid],createdAt:serverTimestamp()});
+ await setDoc(doc(db,"v2_families",ref.id,"members",user.uid),{name:user.displayName||"Eu",joinedAt:serverTimestamp()});
  selectFamily(ref.id);root.hidden=true;notify("Família criada.");
  }catch(err){console.error(err);notify("Falha ao criar família.");}};
 }
@@ -102,7 +102,7 @@ async function inviteFamily(){
  if(f.ownerId!==user.uid)return notify("Somente o administrador pode convidar.");
  try{
  const code=randomCode();
- await setDoc(doc(db,"invites",code),{familyId,ownerId:user.uid,expiresAt:Date.now()+24*60*60*1000,active:true});
+ await setDoc(doc(db,"v2_invites",code),{familyId,ownerId:user.uid,expiresAt:Date.now()+24*60*60*1000,active:true});
  show("Convidar pessoa",'<p>Envie este código à pessoa. Ele expira em 24 horas.</p><div class="v2-code">'+escapeHtml(code)+'</div><button id="v2Copy" class="v2-primary">Copiar código</button>');
  $("#v2Copy").onclick=async()=>{try{await navigator.clipboard.writeText(code);notify("Código copiado.");}catch(e){notify("Selecione e copie o código.");}};
  }catch(err){console.error(err);notify("Falha ao criar convite.");}
@@ -110,10 +110,10 @@ async function inviteFamily(){
 function joinFamilyForm(){
  show("Entrar na família",'<form id="v2Form"><label>Código do convite<input id="v2Code" autocomplete="off" required placeholder="Cole o código recebido"></label><button class="v2-primary">Entrar</button></form>');
  $("#v2Form").onsubmit=async e=>{e.preventDefault();const code=formValue("v2Code").toLowerCase();if(!/^[a-f0-9]{32}$/.test(code))return notify("Código inválido.");try{
- const inv=await getDoc(doc(db,"invites",code));if(!inv.exists()||!inv.data().active||inv.data().expiresAt<Date.now())return notify("Convite inválido ou expirado.");
+ const inv=await getDoc(doc(db,"v2_invites",code));if(!inv.exists()||!inv.data().active||inv.data().expiresAt<Date.now())return notify("Convite inválido ou expirado.");
  const fid=inv.data().familyId;
- await setDoc(doc(db,"families",fid,"members",user.uid),{name:user.displayName||"Membro",inviteId:code,joinedAt:serverTimestamp()});
- await updateDoc(doc(db,"families",fid),{memberIds:arrayUnion(user.uid)});
+ await setDoc(doc(db,"v2_families",fid,"members",user.uid),{name:user.displayName||"Membro",inviteId:code,joinedAt:serverTimestamp()});
+ await updateDoc(doc(db,"v2_families",fid),{memberIds:arrayUnion(user.uid)});
  selectFamily(fid);root.hidden=true;notify("Você entrou na família.");
  }catch(err){console.error(err);notify("Não foi possível entrar. Confira o código.");}};
 }
@@ -121,7 +121,7 @@ function familyExpenseForm(){
  const options=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
  show("Despesa da família",'<form id="v2Form">'+moneyInput("Valor (R$)")+'<label>Descrição<input id="v2Desc" maxlength="80" required placeholder="Conta de luz"></label><label>Quem pagou?<select id="v2Payer">'+options+'<option value="shared">Pagamos juntos</option></select></label><label>Divisão<select id="v2Split"><option value="equal">Igualmente entre todos</option><option value="none">Apenas registrar</option></select></label><button class="v2-primary">Salvar despesa</button></form>');
  $("#v2Form").onsubmit=async e=>{e.preventDefault();const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),payerId=formValue("v2Payer"),split=formValue("v2Split");if(!(amount>0&&amount<=99999999999&&description))return notify("Informe valor e descrição.");
- try{await addDoc(collection(db,"families",familyId,"expenses"),{amount,description,payerId,payerName:payerId==="shared"?"Pagamos juntos":members.find(m=>m.id===payerId)?.name||"Membro",split,createdBy:user.uid,date:today(),createdAt:serverTimestamp()});root.hidden=true;notify("Despesa da família salva.");}catch(err){console.error(err);notify("Falha ao salvar despesa.");}};
+ try{await addDoc(collection(db,"v2_families",familyId,"expenses"),{amount,description,payerId,payerName:payerId==="shared"?"Pagamos juntos":members.find(m=>m.id===payerId)?.name||"Membro",split,createdBy:user.uid,date:today(),createdAt:serverTimestamp()});root.hidden=true;notify("Despesa da família salva.");}catch(err){console.error(err);notify("Falha ao salvar despesa.");}};
 }
 window.financas2={familyManager,incomeForm,historyView};
 if(window.FIREBASE_CONFIG){
