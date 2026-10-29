@@ -12,6 +12,9 @@ jobs:
           node --check app.js
           node --check finance2.js
           node -e 'JSON.parse(require("fs").readFileSync("manifest.webmanifest","utf8"))'
-      - name: Enforce separate Firebase
+      - name: Ensure Finanças 2.0 uses separate collections
         run: |
-          if grep -q 'minhas-financas-cee4e' firebase-config.js; then echo "Original Firebase project must not be reused"; exit 1; fi
+          grep -q "v2_users" app.js
+          grep -q "v2_families" finance2.js
+          grep -q "match /users/" firestore.rules
+          grep -q "match /v2_users/" firestore.rules
