@@ -67,7 +67,7 @@ function historyView(){
 function watchPersonal(){
  unsubs.forEach(fn=>fn());unsubs=[];
  unsubs.push(onSnapshot(collection(db,"v2_users",user.uid,"months"),snap=>{months=snap.docs.map(d=>d.data());updateOverview();},err=>console.error(err)));
- unsubs.push(onSnapshot(collection(db,"v2_users",user.uid,"movements"),snap=>{movements=snap.docs.map(d=>({id:d.id,...d.data()}));updateOverview();},err=>notify("Não foi possível carregar as entradas.")));
+ unsubs.push(onSnapshot(collection(db,"v2_users",user.uid,"movements"),snap=>{movements=snap.docs.map(d=>({id:d.id,...d.data()}));updateOverview();},err=>{console.error("Movimentações:",err);notify(err?.code==="permission-denied"?"Firestore sem regras v2 publicadas.":"Não foi possível carregar as entradas.");}));
  unsubs.push(onSnapshot(query(collection(db,"v2_families"),where("memberIds","array-contains",user.uid)),snap=>{families=snap.docs.map(d=>({id:d.id,...d.data()}));if(familyId&&!families.some(f=>f.id===familyId))selectFamily(null);updateOverview();},err=>console.error(err)));
 }
 function selectFamily(id){
@@ -95,7 +95,7 @@ function createFamilyForm(){
  const ref=doc(collection(db,"v2_families"));await setDoc(ref,{name,ownerId:user.uid,memberIds:[user.uid],createdAt:serverTimestamp()});
  await setDoc(doc(db,"v2_families",ref.id,"members",user.uid),{name:user.displayName||"Eu",joinedAt:serverTimestamp()});
  selectFamily(ref.id);root.hidden=true;notify("Família criada.");
- }catch(err){console.error(err);notify("Falha ao criar família.");}};
+ }catch(err){console.error("Criar família:",err);notify(err?.code==="permission-denied"?"Sem permissão no Firestore. Publique as regras da versão 2.0 na aba Regras do Firebase.":"Não foi possível criar família: "+(err?.code||"verifique a conexão"));}};
 }
 async function inviteFamily(){
  const f=families.find(x=>x.id===familyId);if(!f)return;
