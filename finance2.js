@@ -107,7 +107,18 @@ async function inviteFamily(){
  const code=randomCode();
  await setDoc(doc(db,"v2_invites",code),{familyId,ownerId:user.uid,expiresAt:Date.now()+23*60*60*1000,active:true});
  show("Convidar pessoa",'<p>Envie este código à pessoa. Ele expira em 23 horas.</p><div class="v2-code">'+escapeHtml(code)+'</div><button id="v2Copy" class="v2-primary">Copiar código</button>');
- $("#v2Copy").onclick=async()=>{try{await navigator.clipboard.writeText(code);notify("Código copiado.");}catch(e){notify("Selecione e copie o código.");}};
+ $("#v2Copy").onclick=async()=>{
+   const btn=$("#v2Copy");
+   try {
+     await navigator.clipboard.writeText(code);
+     btn.textContent="✓ Código copiado!";
+     btn.setAttribute("aria-label","Código copiado!");
+     notify("Código copiado!");
+   } catch(e) {
+     console.error("Copiar convite:",e);
+     notify("Não foi possível copiar automaticamente. Selecione o código para copiar.");
+   }
+ };
  }catch(err){console.error("Convite:",err);notify(err?.code==="permission-denied"?"Firebase recusou o convite. Verifique as regras publicadas.":"Não foi possível criar convite: "+(err?.code||"verifique a conexão"));const btn=$("#v2Invite");if(btn){btn.disabled=false;btn.textContent="Convidar pessoa";}}
 }
 function joinFamilyForm(){
