@@ -14,7 +14,7 @@ Versão independente de [Minhas Finanças original](https://github.com/palomagl/
 
 ## Limitações atuais (importante)
 
-**O projeto ainda precisa de configuração do novo Firebase e testes reais de integração.** O login está intencionalmente desativado para não conectar a versão 2.0 ao banco do app original.
+**O projeto ainda precisa de configuração do novo Firebase e testes reais de integração.** O login está configurado no mesmo projeto Firebase do original, usando o segundo cadastro de aplicativo Web informado pela proprietária. As despesas da v2 usam `v2_users` e as famílias usam `v2_families`/`v2_invites`; não reutilizam a coleção `users` do app original.
 
 As despesas familiares registram quem pagou, mas **ainda não debitam automaticamente o saldo pessoal**. Também ainda faltam: acertos financeiros entre membros, contribuição individual no pagamento conjunto, edição/exclusão de despesas familiares e testes multiusuário de concorrência/segurança. O modo de divisão da família é informativo nesta etapa.
 
@@ -22,14 +22,17 @@ O código do convite gera um token hexadecimal longo, não o código curto de se
 
 ## Configuração antes de testar
 
-1. Crie um projeto Firebase **novo** e diferente de `minhas-financas-cee4e`.
-2. Ative Authentication com Google e crie o Cloud Firestore no projeto novo.
-3. Preencha `firebase-config.js` com os dados **do novo projeto**.
-4. Publique `firestore.rules` nesse novo Firestore (as regras só são aplicadas quando implantadas no Firebase).
-5. Autorize o domínio da nova implantação no Authentication.
-6. Publique em um projeto da Vercel separado da versão original.
-7. Teste com duas contas Google diferentes e valide as permissões antes de disponibilizar para outras pessoas.
+1. Reutilize o projeto Firebase existente `minhas-financas-cee4e` (já configurado em `firebase-config.js` com o appId Web da v2).
+2. Confirme que o login Google está ativo em Authentication.
+3. Antes de alterar regras de produção, valide `firestore.rules` em um emulador/testes: esse arquivo mantém o acesso privado de `users` e acrescenta `v2_users`, `v2_families` e `v2_invites`.
+4. Publique as regras **somente depois de testar**, no mesmo Firestore do projeto existente; nunca substitua as regras de produção sem revisão.
+5. Em Authentication, autorize o domínio exato do novo site Vercel.
+6. Teste com duas contas Google diferentes e confira que o app original permanece funcionando.
 
 ## Organização
 
 `app.js` conserva as despesas originais; `finance2.js` adiciona movimentações e família. `index.html`, `styles.css`, `icons/`, `manifest.webmanifest` e `sw.js` controlam interface e instalação.
+
+## Logo
+
+A abertura voltou a utilizar a imagem original (`icons/original-splash.png`), com filtro CSS alterando somente o tom rosa para verde. Essa opção mantém a composição do primeiro app. Os demais ícones ainda podem precisar de revisão visual final.
