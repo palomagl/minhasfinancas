@@ -482,3 +482,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .app.family-view .v2-paid-status{color:#277451;font-weight:650}
 .app.family-view .v2-markpaid{min-height:40px;margin-top:5px}
 @media(max-width:340px){.app.family-view .v2-summary-grid{grid-template-columns:1fr}.app.family-view .v2-summary-grid>div{flex-direction:row;justify-content:space-between}}
+
+.v2-edit{grid-column:1/-1;justify-self:start;color:var(--accent);font-size:13px;font-weight:750;padding:5px 1px;min-height:34px}
+.v2-edit:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
