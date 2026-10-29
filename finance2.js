@@ -22,7 +22,7 @@ function show(title,content){
 }
 function formValue(id){return root.querySelector("#"+id)?.value?.trim()||"";}
 function paidTotal(){return months.flatMap(x=>x.items||[]).filter(x=>x.paid).reduce((sum,x)=>sum+(x.amount||0),0);}
-function personalBalance(){return movements.reduce((sum,x)=>sum+(x.kind==="income"?x.amount:x.kind==="adjust"?x.amount:-(x.amount||0)),0)-paidTotal();}
+function personalBalance(){return movements.reduce((sum,x)=>sum+(x.kind==="income"||x.kind==="adjust"?x.amount:-(x.amount||0)),0)-paidTotal();}
 function updateOverview(){
  const personal=mode==="personal";
  overview.hidden=!user;
@@ -146,6 +146,7 @@ function joinFamilyForm(){
 }
 function familyExpenseForm(){
  if(!familyId)return familyManager();
+ if(!members.length){notify("Carregando participantes da família. Tente novamente.");return;}
  const options=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
  const month=selectedMonth();
  const defaultDate=today().startsWith(month)?today():month+"-01";
@@ -177,6 +178,18 @@ function familyExpenseForm(){
  }catch(err){console.error(err);btn.disabled=false;btn.textContent="Salvar despesa";notify("Não foi possível salvar a despesa.");}};
 }
 window.financas2={familyManager,incomeForm,historyView};
-if(window.FIREBASE_CONFIG){
- try{const app=getApp();auth=getAuth(app);db=getFirestore(app);onAuthStateChanged(auth,u=>{user=u;unsubs.forEach(fn=>fn());unsubs=[];selectFamily(null);months=[];movements=[];families=[];if(u)watchPersonal();else{overview.hidden=true;root.hidden=true;}});}catch(e){console.error(e);}
+let financeInitialized=false;
+function initializeFinances(){
+ if(financeInitialized||!window.FIREBASE_CONFIG)return;
+ let app;
+ try{app=getApp();}catch{return;}
+ financeInitialized=true;
+ auth=getAuth(app);db=getFirestore(app);
+ onAuthStateChanged(auth,u=>{
+  user=u;unsubs.forEach(fn=>fn());unsubs=[];
+  selectFamily(null);months=[];movements=[];families=[];
+  if(u)watchPersonal();else{overview.hidden=true;root.hidden=true;}
+ });
 }
+window.addEventListener("financas2:firebase-ready",initializeFinances);
+initializeFinances();
