@@ -84,13 +84,37 @@ function renderFamilyList(){
  const incomes=familyIncomes.filter(x=>(x.date||"").startsWith(month));
  const incomeTotal=incomes.reduce((a,x)=>a+x.amount,0);
  const due=expenses.reduce((a,x)=>a+x.amount,0),paid=expenses.filter(x=>x.paid===true).reduce((a,x)=>a+x.amount,0);
- const entries=incomes.sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(x=>'<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>+'+brl(x.amount)+'</strong><small>Entrada de '+escapeHtml(x.personName||"Família")+'</small></div>').join("");
+ const entries=incomes.sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(x=>'<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>+'+brl(x.amount)+'</strong><small>Entrada de '+escapeHtml(x.personName||"Família")+'</small><button class="v2-edit" data-edit-income="'+escapeHtml(x.id)+'" aria-label="Editar entrada">Editar</button></div>').join("");
  const bills=expenses.sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(x=>{
   const done=x.paid===true;
-  return '<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small class="'+(done?'v2-paid-status':'v2-pending-status')+'">'+(done?'✓ Pago por '+escapeHtml(x.payerName||"Membro"):'● Pendente · '+escapeHtml(x.date||""))+'</small>'+(!done?'<button class="v2-markpaid" data-paid="'+escapeHtml(x.id)+'">✓ Registrar pagamento</button>':'')+'</div>';
+  return '<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small class="'+(done?'v2-paid-status':'v2-pending-status')+'">'+(done?'✓ Pago por '+escapeHtml(x.payerName||"Membro"):'● Pendente · '+escapeHtml(x.date||""))+'</small><button class="v2-edit" data-edit-expense="'+escapeHtml(x.id)+'" aria-label="Editar despesa">Editar</button>'+(!done?'<button class="v2-markpaid" data-paid="'+escapeHtml(x.id)+'">✓ Registrar pagamento</button>':'')+'</div>';
  }).join("");
  el.innerHTML='<div class="v2-month-summary"><span>Resumo de '+escapeHtml(month)+'</span><div class="v2-summary-grid"><div><small>Entradas</small><strong>'+brl(incomeTotal)+'</strong></div><div><small>Contas pagas</small><strong>'+brl(paid)+'</strong></div><div><small>A pagar</small><strong>'+brl(due-paid)+'</strong></div></div></div><h3 class="v2-section-title">Entradas</h3>'+(entries||'<p class="v2-empty">Nenhuma entrada neste mês.</p>')+'<h3 class="v2-section-title">Contas da casa</h3>'+(bills||'<p class="v2-empty">Nenhuma conta neste mês.</p>');
  el.querySelectorAll("[data-paid]").forEach(btn=>btn.onclick=()=>markFamilyPaid(btn.dataset.paid));
+ el.querySelectorAll("[data-edit-income]").forEach(btn=>btn.onclick=()=>editFamilyEntry("incomes",btn.dataset.editIncome));
+ el.querySelectorAll("[data-edit-expense]").forEach(btn=>btn.onclick=()=>editFamilyEntry("expenses",btn.dataset.editExpense));
+}
+function editFamilyEntry(type,id){
+ const isIncome=type==="incomes";
+ const item=(isIncome?familyIncomes:familyExpenses).find(x=>x.id===id);
+ if(!item)return notify("Registro não encontrado.");
+ const people=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
+ const personId=isIncome?item.personId:item.payerId;
+ show(isIncome?"Editar entrada":"Editar despesa",'<form id="v2Form"><label>Descrição<input id="v2Desc" maxlength="80" required></label>'+moneyInput("Valor (R$)")+'<label>Data<input id="v2EditDate" type="date" required></label><label>'+(isIncome?"De quem é a entrada?":"Quem pagou ou vai pagar?")+'<select id="v2EditPerson">'+people+(isIncome?"":'<option value="shared">Pagamos juntos</option>')+'</select></label><button class="v2-primary">Salvar alterações</button></form>');
+ $("#v2Desc").value=item.description||"";
+ $("#v2Amount").value=(item.amount/100).toFixed(2).replace(".",",");
+ $("#v2EditDate").value=item.date||today();
+ $("#v2EditPerson").value=personId||members[0]?.id||"";
+ $("#v2Form").onsubmit=async e=>{
+  e.preventDefault();
+  const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),date=formValue("v2EditDate"),chosen=formValue("v2EditPerson");
+  if(!(amount>0&&amount<=99999999999&&description.length<=80&&description&&/^\\d{4}-\\d{2}-\\d{2}$/.test(date)&&chosen))return notify("Revise os dados informados.");
+  const btn=$("#v2Form .v2-primary");btn.disabled=true;btn.textContent="Salvando…";
+  const name=chosen==="shared"?"Pagamos juntos":members.find(m=>m.id===chosen)?.name||"Membro";
+  const patch=isIncome?{amount,description,date,personId:chosen,personName:name}:{amount,description,date,payerId:chosen,payerName:name};
+  try{await updateDoc(doc(db,"v2_families",familyId,type,id),patch);root.hidden=true;notify("Alterações salvas.");}
+  catch(err){console.error("Editar registro:",err);btn.disabled=false;btn.textContent="Salvar alterações";notify("Não foi possível editar. Confira as permissões do Firebase.");}
+ };
 }
 function familyIncomeForm(){
  if(!familyId)return familyManager();
