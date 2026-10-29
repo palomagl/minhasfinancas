@@ -2,7 +2,7 @@
 // Este módulo usa o Firebase existente, usando coleções exclusivas da v2.
 import { getApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, arrayUnion, deleteDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, arrayUnion, deleteDoc, onSnapshot, query, where, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const $ = s => document.querySelector(s);
 const brl = cents => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(cents/100);
@@ -149,11 +149,32 @@ function familyExpenseForm(){
  const options=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
  const month=selectedMonth();
  const defaultDate=today().startsWith(month)?today():month+"-01";
- show("Nova despesa da família",'<p class="v2-helper">Exemplo: conta de luz de R$ 200, paga pela Marisa. Todos da família poderão ver.</p><form id="v2Form"><label>Descrição<input id="v2Desc" maxlength="80" required placeholder="Ex.: Conta de luz"></label>'+moneyInput("Valor (R$)")+'<label>Data<input type="date" id="v2Date" value="'+defaultDate+'" required></label><label>Quem pagou esta conta?<select id="v2Payer" required>'+options+'<option value="shared">Pagamos juntos</option></select></label><label>Como considerar a divisão?<select id="v2Split"><option value="none">Só registrar quem pagou</option><option value="equal">Dividir igualmente entre membros</option></select></label><p class="v2-helper" id="v2SplitHelp">A despesa aparece para a família, mas não gera cobrança entre pessoas nem desconta outro saldo.</p><button class="v2-primary">Salvar despesa</button></form>');
+ show("Nova despesa da família",'<p class="v2-helper">Exemplo: conta de luz de R$ 200, paga pela Marisa. Todos da família poderão ver.</p><form id="v2Form"><label>Descrição<input id="v2Desc" maxlength="80" required placeholder="Ex.: Conta de luz"></label>'+moneyInput("Valor (R$)")+'<label>Data<input type="date" id="v2Date" value="'+defaultDate+'" required></label><label>Quem pagou esta conta?<select id="v2Payer" required>'+options+'<option value="shared">Pagamos juntos</option></select></label><label>Como considerar a divisão?<select id="v2Split"><option value="none">Só registrar quem pagou</option><option value="equal">Dividir igualmente entre membros</option></select></label><label class="v2-repeat"><input id="v2Recurring" type="checkbox"> Conta fixa / repetir mensalmente</label><div id="v2RepeatBox" hidden><label>Tipo de repetição<select id="v2RepeatType"><option value="fixed">Conta fixa (próximos 12 meses)</option><option value="installments">Parcelada (quantidade de parcelas)</option></select></label><label id="v2CountRow" hidden>Quantas parcelas?<input id="v2Count" type="number" min="2" max="24" value="6"></label><p class="v2-helper">Conta fixa: gera os próximos 12 meses. Parcelada: gera apenas a quantidade selecionada. Cada lançamento poderá ser identificado pelo mês.</p></div><p class="v2-helper" id="v2SplitHelp">A despesa aparece para a família, mas não gera cobrança entre pessoas nem desconta outro saldo.</p><button class="v2-primary">Salvar despesa</button></form>');
+ $("#v2Recurring").onchange=()=>{$("#v2RepeatBox").hidden=!$("#v2Recurring").checked;};
+ $("#v2RepeatType").onchange=()=>{$("#v2CountRow").hidden=$("#v2RepeatType").value!=="installments";};
  $("#v2Split").onchange=()=>{$("#v2SplitHelp").textContent=formValue("v2Split")==="equal"?"A divisão será informativa: ainda não há transferência ou acerto automático de saldos.":"A despesa aparece para a família, mas não gera cobrança entre pessoas nem desconta outro saldo.";};
  $("#v2Form").onsubmit=async e=>{e.preventDefault();const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),payerId=formValue("v2Payer"),split=formValue("v2Split"),date=formValue("v2Date");if(!(amount>0&&amount<=99999999999&&description&&/^\d{4}-\d{2}-\d{2}$/.test(date)))return notify("Informe descrição, valor e data.");
  const btn=$("#v2Form button[type=submit],#v2Form button.v2-primary");btn.disabled=true;btn.textContent="Salvando…";
- try{await addDoc(collection(db,"v2_families",familyId,"expenses"),{amount,description,payerId,payerName:payerId==="shared"?"Pagamos juntos":members.find(m=>m.id===payerId)?.name||"Membro",split,createdBy:user.uid,date,createdAt:serverTimestamp()});root.hidden=true;notify("Despesa da família salva.");}catch(err){console.error(err);btn.disabled=false;btn.textContent="Salvar despesa";notify("Não foi possível salvar a despesa.");}};
+ try{
+  const repeating=$("#v2Recurring").checked;
+  const kind=repeating?$("#v2RepeatType").value:"once";
+  const count=kind==="fixed"?12:kind==="installments"?Number($("#v2Count").value):1;
+  if(!Number.isInteger(count)||count<1||count>24||(kind==="installments"&&count<2)){btn.disabled=false;btn.textContent="Salvar despesa";return notify("Escolha entre 2 e 24 parcelas.");}
+  const batch=writeBatch(db);
+  const col=collection(db,"v2_families",familyId,"expenses");
+  const [year,month,day]=date.split("-").map(Number);
+  for(let i=0;i<count;i++){
+   const d=new Date(year,month-1+i,1);
+   const y=d.getFullYear(),m=d.getMonth()+1;
+   const lastDay=new Date(y,m,0).getDate();
+   const due=[y,String(m).padStart(2,"0"),String(Math.min(day,lastDay)).padStart(2,"0")].join("-");
+   const label=kind==="installments"?description+" ("+(i+1)+"/"+count+")":description;
+   const ref=doc(col);
+   batch.set(ref,{amount,description:label,payerId,payerName:payerId==="shared"?"Pagamos juntos":members.find(m=>m.id===payerId)?.name||"Membro",split,createdBy:user.uid,date:due,createdAt:serverTimestamp()});
+  }
+  await batch.commit();
+  root.hidden=true;notify(count===1?"Despesa da família salva.":count+" meses registrados com sucesso.");
+ }catch(err){console.error(err);btn.disabled=false;btn.textContent="Salvar despesa";notify("Não foi possível salvar a despesa.");}};
 }
 window.financas2={familyManager,incomeForm,historyView};
 if(window.FIREBASE_CONFIG){
