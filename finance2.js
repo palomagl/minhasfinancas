@@ -1,5 +1,6 @@
 // Finanças 2.0 — receitas, saldo e espaços familiares.
 // Este módulo usa o Firebase existente, usando coleções exclusivas da v2.
+import { parseMoney, recurrenceDates, availableBalance } from "./finance-core.mjs";
 import { getApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, arrayUnion, deleteDoc, onSnapshot, query, where, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
@@ -7,7 +8,7 @@ import { getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, array
 const $ = s => document.querySelector(s);
 const brl = cents => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(cents/100);
 const escapeHtml = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const toCents = value => { const s=String(value).trim().replace(/\s/g,"").replace(/\./g,"").replace(",","."); const n=Number(s); return Number.isFinite(n)?Math.round(n*100):NaN; };
+const toCents = parseMoney;
 const randomCode = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), x=>x.toString(16).padStart(2,"0")).join("");
 const today = () => { const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-"); };
 let auth,db,user,months=[],movements=[],families=[],familyId=null,familyUnsub=null,familyMembersUnsub=null,familyExpenses=[],members=[],unsubs=[],mode="personal";
@@ -22,7 +23,7 @@ function show(title,content){
 }
 function formValue(id){return root.querySelector("#"+id)?.value?.trim()||"";}
 function paidTotal(){return months.flatMap(x=>x.items||[]).filter(x=>x.paid).reduce((sum,x)=>sum+(x.amount||0),0);}
-function personalBalance(){return movements.reduce((sum,x)=>sum+(x.kind==="income"||x.kind==="adjust"?x.amount:-(x.amount||0)),0)-paidTotal();}
+function personalBalance(){return availableBalance(movements,months);}
 function updateOverview(){
  const personal=mode==="personal";
  overview.hidden=!user;
@@ -163,12 +164,9 @@ function familyExpenseForm(){
   if(!Number.isInteger(count)||count<1||count>24||(kind==="installments"&&count<2)){btn.disabled=false;btn.textContent="Salvar despesa";return notify("Escolha entre 2 e 24 parcelas.");}
   const batch=writeBatch(db);
   const col=collection(db,"v2_families",familyId,"expenses");
-  const [year,month,day]=date.split("-").map(Number);
-  for(let i=0;i<count;i++){
-   const d=new Date(year,month-1+i,1);
-   const y=d.getFullYear(),m=d.getMonth()+1;
-   const lastDay=new Date(y,m,0).getDate();
-   const due=[y,String(m).padStart(2,"0"),String(Math.min(day,lastDay)).padStart(2,"0")].join("-");
+  const dates=recurrenceDates(date,count);
+  for(let i=0;i<dates.length;i++){
+   const due=dates[i];
    const label=kind==="installments"?description+" ("+(i+1)+"/"+count+")":description;
    const ref=doc(col);
    batch.set(ref,{amount,description:label,payerId,payerName:payerId==="shared"?"Pagamos juntos":members.find(m=>m.id===payerId)?.name||"Membro",split,createdBy:user.uid,date:due,createdAt:serverTimestamp()});
