@@ -1,4 +1,4 @@
-// Minhas Finanças — app de despesas com login Google (Firebase Auth) e dados no Firestore.
+// Finanças 2.0 — base original de despesas, agora com extensão pessoal/família.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {
   getAuth, GoogleAuthProvider, onAuthStateChanged,
@@ -477,6 +477,8 @@ function openMenu() {
   const isCurrent = state.y === now.getFullYear() && state.m === now.getMonth() + 1;
   menu.innerHTML = `
     <div class="menu-user"><img alt="" id="menuAvatar" referrerpolicy="no-referrer"><div><b id="menuName"></b><small id="menuEmail"></small></div></div>
+    <button type="button" class="act" role="menuitem" data-act="family">${ICON.wallet}Família e compartilhamento</button>
+    <button type="button" class="act" role="menuitem" data-act="income">${ICON.check}Registrar entrada</button>
     <button type="button" class="act" role="menuitem" data-act="year">${ICON.chart}Resumo do ano</button>
     ${items.length ? `<button type="button" class="act" role="menuitem" data-act="payall">${allPaid ? ICON.undo + "Desmarcar todas do mês" : ICON.checks + "Marcar todas do mês como pagas"}</button>` : ""}
     ${isCurrent ? "" : `<button type="button" class="act" role="menuitem" data-act="today">${ICON.today}Ir para o mês atual</button>`}
@@ -498,7 +500,9 @@ menuLayer.addEventListener("click", (e) => {
   if (!b) { if (!e.target.closest(".menu-user")) closeMenu(); return; }
   const act = b.dataset.act;
   closeMenu();
-  if (act === "year") openYearSheet();
+  if (act === "family") window.financas2?.familyManager();
+  else if (act === "income") window.financas2?.incomeForm();
+  else if (act === "year") openYearSheet();
   else if (act === "today") { state.y = now.getFullYear(); state.m = now.getMonth() + 1; render(); }
   else if (act === "payall") {
     const k = keyFor(state.y, state.m);
