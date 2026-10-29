@@ -410,3 +410,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .v2-family-item{display:grid;grid-template-columns:1fr auto;gap:5px;border-bottom:1px solid var(--line);padding:14px 2px}
 .v2-family-item small{grid-column:1/-1;color:var(--muted)}
 .v2-empty{font-size:14px;color:var(--muted)}
+
+/* Reaproveita o desenho da abertura original, alterando somente sua tonalidade. */
+.boot-art { filter: hue-rotate(170deg) saturate(.86); }
