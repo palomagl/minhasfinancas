@@ -105,10 +105,10 @@ async function inviteFamily(){
  try{
  const btn=$("#v2Invite");if(btn){btn.disabled=true;btn.textContent="Gerando convite…";}
  const code=randomCode();
- await setDoc(doc(db,"v2_invites",code),{familyId,ownerId:user.uid,expiresAt:Date.now()+24*60*60*1000,active:true});
- show("Convidar pessoa",'<p>Envie este código à pessoa. Ele expira em 24 horas.</p><div class="v2-code">'+escapeHtml(code)+'</div><button id="v2Copy" class="v2-primary">Copiar código</button>');
+ await setDoc(doc(db,"v2_invites",code),{familyId,ownerId:user.uid,expiresAt:Date.now()+23*60*60*1000,active:true});
+ show("Convidar pessoa",'<p>Envie este código à pessoa. Ele expira em 23 horas.</p><div class="v2-code">'+escapeHtml(code)+'</div><button id="v2Copy" class="v2-primary">Copiar código</button>');
  $("#v2Copy").onclick=async()=>{try{await navigator.clipboard.writeText(code);notify("Código copiado.");}catch(e){notify("Selecione e copie o código.");}};
- }catch(err){console.error(err);notify("Falha ao criar convite.");const btn=$("#v2Invite");if(btn){btn.disabled=false;btn.textContent="Convidar pessoa";}}
+ }catch(err){console.error("Convite:",err);notify(err?.code==="permission-denied"?"Firebase recusou o convite. Verifique as regras publicadas.":"Não foi possível criar convite: "+(err?.code||"verifique a conexão"));const btn=$("#v2Invite");if(btn){btn.disabled=false;btn.textContent="Convidar pessoa";}}
 }
 function joinFamilyForm(){
  if(families.length){notify("Você já participa de uma família.");return;}
