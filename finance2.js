@@ -26,7 +26,7 @@ function paidTotal(){return months.flatMap(x=>x.items||[]).filter(x=>x.paid).red
 function personalBalance(){return availableBalance(movements,months);}
 function updateOverview(){
  overview.hidden=!user;if(!user)return;
- const hasFamily=!!familyId, person=mode==="personal";
+ const hasFamily=!!familyId, person=mode==="personal"&&!families.length;
  const income=movements.filter(x=>x.kind==="income").reduce((a,x)=>a+x.amount,0);
  const familyMoney=familyIncomes.reduce((a,x)=>a+x.amount,0);
  const familyPaid=familyExpenses.filter(x=>x.paid===true).reduce((a,x)=>a+x.amount,0);
@@ -67,7 +67,7 @@ function watchPersonal(){
  unsubs.forEach(fn=>fn());unsubs=[];
  unsubs.push(onSnapshot(collection(db,"v2_users",user.uid,"months"),snap=>{months=snap.docs.map(d=>d.data());updateOverview();},err=>console.error(err)));
  unsubs.push(onSnapshot(collection(db,"v2_users",user.uid,"movements"),snap=>{movements=snap.docs.map(d=>({id:d.id,...d.data()}));updateOverview();},err=>{console.error("Movimentações:",err);notify(err?.code==="permission-denied"?"Firestore sem regras v2 publicadas.":"Não foi possível carregar as entradas.");}));
- unsubs.push(onSnapshot(query(collection(db,"v2_families"),where("memberIds","array-contains",user.uid)),snap=>{families=snap.docs.map(d=>({id:d.id,...d.data()}));if(familyId&&!families.some(f=>f.id===familyId))selectFamily(null);if(!familyId&&families.length)selectFamily(families[0].id);else updateOverview();},err=>console.error(err)));
+ unsubs.push(onSnapshot(query(collection(db,"v2_families"),where("memberIds","array-contains",user.uid)),snap=>{families=snap.docs.map(d=>({id:d.id,...d.data()}));if(families.length)mode="family";if(familyId&&!families.some(f=>f.id===familyId))selectFamily(null);if(!familyId&&families.length)selectFamily(families[0].id);else updateOverview();},err=>console.error(err)));
 }
 function selectFamily(id){
  familyUnsub?.();familyMembersUnsub?.();familyIncomeUnsub?.();familyId=id;familyExpenses=[];familyIncomes=[];members=[];
