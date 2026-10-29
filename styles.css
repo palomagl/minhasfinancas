@@ -421,3 +421,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .v2-family-summary{display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--line);background:var(--surface);border-radius:16px}
 .v2-family-summary strong{font-size:19px}
 .v2-family-summary small{color:var(--muted)}
+
+/* Ajustes discretos no login, sem mudar a identidade existente */
+.login-intro { display:flex;flex-direction:column;gap:14px; }
+.login-intro .login-title { width:100%; }
+.login-subtitle { margin:0;color:var(--muted);font-size:16px;line-height:1.5;max-width:270px; }
+.google-btn:focus-visible { outline:3px solid var(--focus);outline-offset:3px; }
+@media(max-height:600px){.login{padding-top:calc(env(safe-area-inset-top,0px) + 40px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px);}}
+@media(prefers-reduced-motion:reduce){.boot-art{animation:none}.boot{transition:none}}
