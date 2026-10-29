@@ -2,12 +2,17 @@ rules_version = '2';
 service cloud.firestore {
  match /databases/{database}/documents {
   function signed() { return request.auth != null; }
-  function member(fid) { return signed() && request.auth.uid in get(/databases/$(database)/documents/families/$(fid)).data.memberIds; }
-  function owner(fid) { return signed() && get(/databases/$(database)/documents/families/$(fid)).data.ownerId == request.auth.uid; }
+  function member(fid) { return signed() && request.auth.uid in get(/databases/$(database)/documents/v2_families/$(fid)).data.memberIds; }
+  function owner(fid) { return signed() && get(/databases/$(database)/documents/v2_families/$(fid)).data.ownerId == request.auth.uid; }
+  // Regras do aplicativo original: manter exatamente o isolamento por usuário.
   match /users/{uid}/{nested=**} {
    allow read, write: if signed() && request.auth.uid == uid;
   }
-  match /invites/{code} {
+  // Todas as movimentações da versão 2.0 ficam em outra coleção.
+  match /v2_users/{uid}/{nested=**} {
+   allow read, write: if signed() && request.auth.uid == uid;
+  }
+  match /v2_invites/{code} {
    allow get: if signed();
    allow list: if false;
    allow create: if signed() && request.resource.data.keys().hasOnly(['familyId','ownerId','expiresAt','active'])
@@ -19,7 +24,7 @@ service cloud.firestore {
     && owner(request.resource.data.familyId);
    allow update, delete: if false;
   }
-  match /families/{fid} {
+  match /v2_families/{fid} {
    allow get, list: if signed() && request.auth.uid in resource.data.memberIds;
    allow create: if signed()
     && request.resource.data.keys().hasOnly(['name','ownerId','memberIds','createdAt'])
@@ -32,7 +37,7 @@ service cloud.firestore {
     && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
     && request.resource.data.memberIds.hasAll(resource.data.memberIds)
     && request.auth.uid in request.resource.data.memberIds
-    && exists(/databases/$(database)/documents/families/$(fid)/members/$(request.auth.uid));
+    && exists(/databases/$(database)/documents/v2_families/$(fid)/members/$(request.auth.uid));
    allow delete: if false;
    match /members/{uid} {
     allow read: if member(fid);
@@ -43,10 +48,10 @@ service cloud.firestore {
      && (
        (owner(fid) && !('inviteId' in request.resource.data))
        || ('inviteId' in request.resource.data
-         && exists(/databases/$(database)/documents/invites/$(request.resource.data.inviteId))
-         && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)).data.familyId == fid
-         && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)).data.active == true
-         && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)).data.expiresAt > request.time.toMillis())
+         && exists(/databases/$(database)/documents/v2_invites/$(request.resource.data.inviteId))
+         && get(/databases/$(database)/documents/v2_invites/$(request.resource.data.inviteId)).data.familyId == fid
+         && get(/databases/$(database)/documents/v2_invites/$(request.resource.data.inviteId)).data.active == true
+         && get(/databases/$(database)/documents/v2_invites/$(request.resource.data.inviteId)).data.expiresAt > request.time.toMillis())
       );
     allow update, delete: if false;
    }
@@ -61,7 +66,7 @@ service cloud.firestore {
      && request.resource.data.description.size() <= 80
      && request.resource.data.createdBy == request.auth.uid
      && request.resource.data.payerId is string
-     && (request.resource.data.payerId == 'shared' || request.resource.data.payerId in get(/databases/$(database)/documents/families/$(fid)).data.memberIds)
+     && (request.resource.data.payerId == 'shared' || request.resource.data.payerId in get(/databases/$(database)/documents/v2_families/$(fid)).data.memberIds)
      && request.resource.data.split in ['equal','none'];
     allow update, delete: if false;
    }
