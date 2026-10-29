@@ -413,3 +413,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 
 /* Reaproveita o desenho da abertura original, alterando somente sua tonalidade. */
 .boot-art { filter: hue-rotate(170deg) saturate(.86); }
+
+/* Estado de carregamento sem saltos de layout */
+.v2-body button:disabled{opacity:.68;cursor:progress;pointer-events:none}
+.v2-stack button{min-height:48px;transition:background .16s,opacity .16s}
+.v2-stack button:active{transform:scale(.99)}
+.v2-family-summary{display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--line);background:var(--surface);border-radius:16px}
+.v2-family-summary strong{font-size:19px}
+.v2-family-summary small{color:var(--muted)}
