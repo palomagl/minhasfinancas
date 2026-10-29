@@ -468,3 +468,17 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .app.family-view .v2-month-summary small{line-height:1.5}
 .app.family-view .v2-section-title{margin:22px 0 8px}
 @media(max-width:360px){.app.family-view .v2-overview{padding-inline:12px}}
+
+/* Resumo familiar legível e ações com prioridade visual. */
+.app.family-view .v2-balance-details{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.app.family-view .v2-balance-details span{display:flex;flex-direction:column;gap:2px;background:#f4f8f5;border-radius:11px;padding:10px 12px;font-size:12px;min-width:0}
+.app.family-view .v2-balance-details b{font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}
+.app.family-view .v2-family-name{margin-top:2px;overflow-wrap:anywhere}
+.app.family-view .v2-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
+.app.family-view .v2-summary-grid>div{min-width:0;display:flex;flex-direction:column;gap:5px}
+.app.family-view .v2-summary-grid small{font-size:11px}
+.app.family-view .v2-summary-grid strong{font-size:clamp(13px,3.6vw,17px);overflow-wrap:anywhere;letter-spacing:-.02em}
+.app.family-view .v2-pending-status{color:#986313;font-weight:650}
+.app.family-view .v2-paid-status{color:#277451;font-weight:650}
+.app.family-view .v2-markpaid{min-height:40px;margin-top:5px}
+@media(max-width:340px){.app.family-view .v2-summary-grid{grid-template-columns:1fr}.app.family-view .v2-summary-grid>div{flex-direction:row;justify-content:space-between}}
