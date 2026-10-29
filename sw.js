@@ -1,19 +1,19 @@
 // Guarda o app no aparelho para abrir rápido e funcionar sem internet.
-const CACHE = "financas-2-v7";
+const CACHE = "financas-2-v8";
 const SHELL = [
   "./", "index.html", "styles.css", "app.js", "firebase-config.js", "manifest.webmanifest", "finance2.js", "icons/favicon-2.svg",
   "icons/original-splash.png", "icons/favicon-32.png", "icons/logo-2.svg", "icons/apple-touch-icon.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting().catch(() => {})));
 });
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith("financas-2-") && k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim().catch(() => {}))
   );
 });
 
