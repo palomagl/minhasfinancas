@@ -32,7 +32,7 @@ function updateOverview(){
  const familyPaid=familyExpenses.filter(x=>x.paid===true).reduce((a,x)=>a+x.amount,0);
  overview.innerHTML=(families.length?"":'<div class="v2-mode"><button id="v2Family" class="'+(!person?"selected":"")+'">Família</button><button id="v2Personal" class="'+(person?"selected":"")+'">Pessoal</button></div>')+
  (person?'<div class="v2-balance"><small>Meu saldo pessoal</small><strong>'+brl(personalBalance())+'</strong><span>Entradas pessoais: '+brl(income)+' · Despesas pagas: '+brl(paidTotal())+'</span></div><div class="v2-actions"><button id="v2Income">+ Entrada</button><button id="v2Adjust">Ajustar saldo</button><button id="v2History">Histórico</button></div>':
- '<div class="v2-balance"><small>Saldo disponível da família</small><strong>'+brl(familyMoney-familyPaid)+'</strong><span>'+escapeHtml(families.find(f=>f.id===familyId)?.name||"Minha família")+' · Entradas: '+brl(familyMoney)+' · Pagamentos: '+brl(familyPaid)+'</span></div><div class="v2-actions">'+(hasFamily?'<button id="v2FamilyIncome">+ Entrada</button><button id="v2NewFamilyExpense">+ Despesa</button>':'')+'<button id="v2Families">'+(hasFamily?'Participantes e convite':'Criar ou entrar na família')+'</button></div><div id="v2FamilyList"></div>');
+ '<div class="v2-balance"><small>Saldo disponível da família</small><strong>'+brl(familyMoney-familyPaid)+'</strong><span class="v2-family-name">'+escapeHtml(families.find(f=>f.id===familyId)?.name||"Minha família")+'</span><div class="v2-balance-details"><span>Recebido <b>'+brl(familyMoney)+'</b></span><span>Pago <b>'+brl(familyPaid)+'</b></span></div></div><div class="v2-actions">'+(hasFamily?'<button id="v2FamilyIncome">+ Entrada</button><button id="v2NewFamilyExpense">+ Despesa</button>':'')+'<button id="v2Families">'+(hasFamily?'Participantes e convite':'Criar ou entrar na família')+'</button></div><div id="v2FamilyList"></div>');
  if(!families.length){$("#v2Personal").onclick=()=>switchMode("personal");$("#v2Family").onclick=()=>switchMode("family");}
  if(person){$("#v2Income").onclick=incomeForm;$("#v2Adjust").onclick=adjustForm;$("#v2History").onclick=historyView;}
  else{ $("#v2Families").onclick=familyManager;if(hasFamily){$("#v2FamilyIncome").onclick=familyIncomeForm;$("#v2NewFamilyExpense").onclick=familyExpenseForm;}renderFamilyList();}
@@ -73,7 +73,7 @@ function watchPersonal(){
 function selectFamily(id){
  familyUnsub?.();familyMembersUnsub?.();familyIncomeUnsub?.();familyId=id;familyExpenses=[];familyIncomes=[];members=[];
  if(id){
- familyUnsub=onSnapshot(collection(db,"v2_families",id,"expenses"),s=>{familyExpenses=s.docs.map(d=>({id:d.id,...d.data()}));renderFamilyList();},e=>console.error(e));
+ familyUnsub=onSnapshot(collection(db,"v2_families",id,"expenses"),s=>{familyExpenses=s.docs.map(d=>({id:d.id,...d.data()}));updateOverview();},e=>console.error(e));
  familyIncomeUnsub=onSnapshot(collection(db,"v2_families",id,"incomes"),snap=>{familyIncomes=snap.docs.map(d=>({id:d.id,...d.data()}));updateOverview();},err=>{console.error("Entradas da família:",err);notify("Não foi possível carregar as entradas da família.");});
  familyMembersUnsub=onSnapshot(collection(db,"v2_families",id,"members"),s=>{members=s.docs.map(d=>({id:d.id,...d.data()}));renderFamilyList();},e=>console.error(e));
  }
@@ -85,12 +85,12 @@ function renderFamilyList(){
  const incomes=familyIncomes.filter(x=>(x.date||"").startsWith(month));
  const incomeTotal=incomes.reduce((a,x)=>a+x.amount,0);
  const due=expenses.reduce((a,x)=>a+x.amount,0),paid=expenses.filter(x=>x.paid===true).reduce((a,x)=>a+x.amount,0);
- const entries=incomes.map(x=>'<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>+'+brl(x.amount)+'</strong><small>Entrada de '+escapeHtml(x.personName||"Família")+'</small></div>').join("");
+ const entries=incomes.sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(x=>'<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>+'+brl(x.amount)+'</strong><small>Entrada de '+escapeHtml(x.personName||"Família")+'</small></div>').join("");
  const bills=expenses.sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(x=>{
   const done=x.paid===true;
-  return '<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small>'+(done?'✓ Pago por '+escapeHtml(x.payerName||"Membro"):'Pendente · '+escapeHtml(x.date||""))+'</small>'+(!done?'<button class="v2-markpaid" data-paid="'+escapeHtml(x.id)+'">Marcar como paga</button>':'')+'</div>';
+  return '<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small class="'+(done?'v2-paid-status':'v2-pending-status')+'">'+(done?'✓ Pago por '+escapeHtml(x.payerName||"Membro"):'● Pendente · '+escapeHtml(x.date||""))+'</small>'+(!done?'<button class="v2-markpaid" data-paid="'+escapeHtml(x.id)+'">✓ Registrar pagamento</button>':'')+'</div>';
  }).join("");
- el.innerHTML='<div class="v2-month-summary"><span>Resumo do mês</span><strong>'+brl(incomeTotal)+' em entradas</strong><small>Contas: '+brl(due)+' · Pagas: '+brl(paid)+' · Pendentes: '+brl(due-paid)+'</small></div><h3 class="v2-section-title">Entradas</h3>'+(entries||'<p class="v2-empty">Nenhuma entrada neste mês.</p>')+'<h3 class="v2-section-title">Contas da casa</h3>'+(bills||'<p class="v2-empty">Nenhuma conta neste mês.</p>');
+ el.innerHTML='<div class="v2-month-summary"><span>Resumo de '+escapeHtml(month)+'</span><div class="v2-summary-grid"><div><small>Entradas</small><strong>'+brl(incomeTotal)+'</strong></div><div><small>Contas pagas</small><strong>'+brl(paid)+'</strong></div><div><small>A pagar</small><strong>'+brl(due-paid)+'</strong></div></div></div><h3 class="v2-section-title">Entradas</h3>'+(entries||'<p class="v2-empty">Nenhuma entrada neste mês.</p>')+'<h3 class="v2-section-title">Contas da casa</h3>'+(bills||'<p class="v2-empty">Nenhuma conta neste mês.</p>');
  el.querySelectorAll("[data-paid]").forEach(btn=>btn.onclick=()=>markFamilyPaid(btn.dataset.paid));
 }
 function familyIncomeForm(){
