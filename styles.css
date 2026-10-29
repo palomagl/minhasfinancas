@@ -435,3 +435,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .v2-month-summary span,.v2-month-summary small{font-size:13px;color:var(--muted)}
 .v2-month-summary strong{font-family:var(--font-display);font-size:23px}
 .v2-helper{color:var(--muted);font-size:13px;line-height:1.5;margin:0 0 8px}
+
+/* Recorrência opcional na despesa familiar */
+.v2-repeat{flex-direction:row!important;align-items:center;gap:10px!important;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.v2-repeat input{width:19px!important;min-height:19px!important;height:19px;accent-color:var(--accent);flex:none}
+#v2RepeatBox{padding:12px;background:#eef4ef;border-radius:12px;display:flex;flex-direction:column;gap:10px}
+#v2RepeatBox[hidden]{display:none}
