@@ -11,25 +11,26 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Finanças">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-2.svg">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="icons/logo-2.svg">
+  <link rel="apple-touch-icon" href="icons/logo-2.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css">
   <script src="firebase-config.js"></script>
   <script type="module" src="app.js"></script>
+  <script type="module" src="finance2.js"></script>
 </head>
 <body>
 
-<!-- Abertura: rosa com o desenho da carteira no meio -->
+<!-- Abertura do Finanças 2.0: identidade verde-sálvia -->
 <div class="boot" id="boot">
-  <img class="boot-art" src="icons/splash.png" alt="Finanças 2.0" width="168" height="167">
+  <img class="boot-art" src="icons/splash-2.svg" alt="Finanças 2.0" width="168" height="167">
 </div>
 
 <!-- Login -->
 <section class="login" id="loginScreen" hidden aria-labelledby="loginTitle">
-  <h1 class="login-title" id="loginTitle">Minhas<br><span>Finanças</span></h1>
+  <h1 class="login-title" id="loginTitle">Finanças<br><span>2.0</span></h1>
   <div class="login-actions">
     <p class="login-error" id="loginError" role="alert" hidden></p>
     <button class="google-btn" id="googleBtn" type="button">
