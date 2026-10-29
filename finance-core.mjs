@@ -23,3 +23,9 @@ export function availableBalance(movements,months) {
  const spent=months.flatMap(x=>x.items||[]).filter(x=>x.paid).reduce((s,x)=>s+x.amount,0);
  return movementTotal-spent;
 }
+
+export function householdBalance(incomes,expenses){
+ const income=incomes.reduce((total,item)=>total+item.amount,0);
+ const paid=expenses.filter(item=>item.paid===true).reduce((total,item)=>total+item.amount,0);
+ return {income,paid,available:income-paid};
+}
