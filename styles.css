@@ -380,3 +380,33 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Finanças 2.0 — saldo pessoal e ambiente familiar */
+.v2-overview{padding:12px 16px;background:var(--ground);border-bottom:1px solid var(--line);max-height:52vh;overflow:auto}
+.v2-mode{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#e9eeea;padding:4px;border-radius:16px;margin-bottom:12px}
+.v2-mode button{padding:10px;border-radius:12px;font-size:14px;font-weight:700}
+.v2-mode button.selected{background:#fff;box-shadow:0 1px 4px #142e231c}
+.v2-balance{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:4px}
+.v2-balance small,.v2-balance span{color:var(--muted);font-size:13px}
+.v2-balance strong{font-family:var(--font-display);font-size:30px;letter-spacing:-.04em}
+.v2-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.v2-actions button,.v2-stack button{background:#e6eee8;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:14px;font-weight:700}
+.v2-actions button:first-child{background:#235943;color:#fff}
+.v2-panel{position:fixed;inset:0;z-index:80;background:#132c28a8;display:flex;align-items:flex-end;justify-content:center}
+.v2-panel[hidden]{display:none!important}
+.v2-dialog{width:min(100%,560px);max-height:90dvh;overflow-y:auto;background:#fcfdfb;border-radius:24px 24px 0 0;padding:20px;padding-bottom:calc(25px + env(safe-area-inset-bottom));box-shadow:0 -12px 50px #142e2340}
+.v2-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.v2-heading h2{font-family:var(--font-display);font-size:23px;margin:0}
+.v2-heading button{font-size:30px;width:36px;height:36px;border-radius:50%;background:#e5eee6}
+.v2-body form,.v2-stack{display:flex;flex-direction:column;gap:14px}
+.v2-body label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:600}
+.v2-body input,.v2-body select{width:100%;min-height:48px;border-radius:12px;border:1px solid #d1ded5;background:white;padding:12px;font:inherit;font-weight:400;color:#172c2c}
+.v2-primary{background:#22583e!important;color:white!important;padding:14px;border-radius:12px;font-weight:700;margin-top:6px}
+.v2-entry{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.v2-entry span{display:flex;flex-direction:column;flex:1}
+.v2-entry small{color:var(--muted)}
+.v2-entry button{font-size:25px;color:var(--danger)}
+.v2-code{font-size:18px;font-weight:700;letter-spacing:.1em;overflow-wrap:anywhere;background:#ecf3ed;padding:14px;border-radius:12px;margin:16px 0}
+.v2-family-item{display:grid;grid-template-columns:1fr auto;gap:5px;border-bottom:1px solid var(--line);padding:14px 2px}
+.v2-family-item small{grid-column:1/-1;color:var(--muted)}
+.v2-empty{font-size:14px;color:var(--muted)}
