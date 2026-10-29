@@ -1,0 +1,17 @@
+name: Validate Finanças 2.0
+on:
+  push:
+  pull_request:
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check app.js
+          node --check finance2.js
+          node -e 'JSON.parse(require("fs").readFileSync("manifest.webmanifest","utf8"))'
+      - name: Enforce separate Firebase
+        run: |
+          if grep -q 'minhas-financas-cee4e' firebase-config.js; then echo "Original Firebase project must not be reused"; exit 1; fi
