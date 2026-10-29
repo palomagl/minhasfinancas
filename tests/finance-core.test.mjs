@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseMoney, recurrenceDates, availableBalance } from "../finance-core.mjs";
+import { parseMoney, recurrenceDates, availableBalance, householdBalance } from "../finance-core.mjs";
 test("Brazilian money and invalid values",()=>{
  assert.equal(parseMoney("1500"),150000);
  assert.equal(parseMoney("1.500,25"),150025);
@@ -26,4 +26,21 @@ test("balance only debits paid expenses",()=>{
 });
 test("negative balance and correction",()=>{
  assert.equal(availableBalance([{kind:"income",amount:1000},{kind:"adjust",amount:-2000}],[]),-1000);
+});
+
+test("two salaries combine in one household cash balance",()=>{
+ const result=householdBalance([{amount:300000,personName:"Marisa"},{amount:400000,personName:"Wesley"}],[{amount:150000,paid:true,payerName:"Marisa"},{amount:200000,paid:true,payerName:"Wesley"}]);
+ assert.deepEqual(result,{income:700000,paid:350000,available:350000});
+});
+test("unpaid bills never reduce household available balance",()=>{
+ const result=householdBalance([{amount:120000}],[{amount:50000,paid:false},{amount:10000}]);
+ assert.equal(result.available,120000);
+ assert.equal(result.paid,0);
+});
+test("paid bills are counted exactly once",()=>{
+ const expenses=[{amount:10000,paid:false},{amount:10000,paid:true}];
+ assert.equal(householdBalance([{amount:30000}],expenses).available,20000);
+});
+test("cash balance may be negative after payment",()=>{
+ assert.equal(householdBalance([{amount:1000}],[{amount:2000,paid:true}]).available,-1000);
 });
