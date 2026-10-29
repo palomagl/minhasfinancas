@@ -498,3 +498,78 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .v2-entry-actions .v2-entry-detail{display:flex;justify-content:space-between;gap:16px;padding:12px;background:#f1f6f2;border-radius:12px}
 .v2-entry-actions .v2-entry-detail span{white-space:nowrap;font-weight:750}
 #v2ActionClose{min-height:46px;font-weight:650;color:var(--muted)}
+
+
+/* Desktop workspace — keep the existing compact mobile interface untouched. */
+@media (min-width: 800px) {
+  body { background: #edf2ee; }
+  .app {
+    max-width: 1200px;
+    width: calc(100% - 64px);
+    inset: 24px 0;
+    height: calc(100dvh - 48px);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 22px 65px rgba(22,50,41,.13);
+  }
+  .top { padding-inline: 34px; padding-top: 10px; }
+  .top-row { min-height: 62px; }
+  .top-row h1, .top-row h2 { font-size: 23px; }
+  .month { max-width: 400px; margin-inline: auto; min-height: 64px; }
+  .month-label { font-size: 27px; }
+  .app.family-view .v2-overview {
+    display: grid;
+    grid-template-columns: minmax(290px, .85fr) minmax(0, 1.5fr);
+    align-content: start;
+    align-items: start;
+    column-gap: 28px;
+    padding: 30px 34px 45px;
+    max-width: none;
+  }
+  .app.family-view .v2-mode { grid-column: 1 / -1; max-width: 360px; }
+  .app.family-view .v2-balance { grid-column: 1; grid-row: auto; padding: 26px; box-shadow: 0 6px 22px rgba(22,50,41,.045); }
+  .app.family-view .v2-balance strong { font-size: 38px; }
+  .app.family-view .v2-balance-details { gap: 12px; }
+  .app.family-view .v2-actions { grid-column: 1; margin: 16px 0 0; }
+  .app.family-view #v2FamilyList {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    min-width: 0;
+    padding: 5px 26px 26px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: 0 6px 22px rgba(22,50,41,.045);
+  }
+  .app.family-view .v2-mode ~ #v2FamilyList { grid-row: 2 / span 3; }
+  .app.family-view .v2-month-summary { margin: 14px 0 22px; }
+  .app.family-view .v2-family-item { padding: 16px 8px; }
+  .app.family-view .v2-item-more { transition: background .15s; }
+  .app:not(.family-view) .v2-overview { max-height: none; padding: 24px 34px; }
+  .app:not(.family-view) .list { padding-inline: 20px; }
+  .app:not(.family-view) .summary { padding-inline: 34px; }
+  .v2-panel { align-items: center; padding: 32px; }
+  .v2-dialog {
+    width: min(100%, 540px);
+    max-height: min(85dvh, 780px);
+    padding: 30px;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 30px 90px rgba(15,35,31,.28);
+  }
+  .v2-heading { margin-bottom: 24px; }
+  .v2-body input:hover, .v2-body select:hover { border-color: #9bbdae; }
+  .v2-body input:focus, .v2-body select:focus {
+    outline: 3px solid var(--focus-ring);
+    border-color: var(--focus);
+  }
+  .v2-primary { min-height: 48px; }
+  .login { justify-content: center; gap: 34px; padding: 50px 24px; }
+  .login > * { max-width: 430px; }
+}
+@media (min-width: 800px) and (max-width: 1000px) {
+  .app { width: calc(100% - 32px); inset: 16px 0; height: calc(100dvh - 32px); }
+  .app.family-view .v2-overview { grid-template-columns: minmax(255px, .95fr) minmax(0, 1.15fr); column-gap: 16px; padding-inline: 20px; }
+  .app.family-view #v2FamilyList { padding-inline: 15px; }
+}
