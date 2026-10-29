@@ -55,10 +55,22 @@ service cloud.firestore {
       );
     allow update, delete: if false;
    }
+   match /incomes/{id} {
+    allow read: if member(fid);
+    allow create: if member(fid)
+     && request.resource.data.keys().hasOnly(['amount','description','personId','personName','date','createdBy','createdAt'])
+     && request.resource.data.amount is int && request.resource.data.amount > 0 && request.resource.data.amount <= 99999999999
+     && request.resource.data.description is string && request.resource.data.description.size() > 0 && request.resource.data.description.size() <= 80
+     && request.resource.data.personId in get(/databases/$(database)/documents/v2_families/$(fid)).data.memberIds
+     && request.resource.data.personName is string
+     && request.resource.data.createdBy == request.auth.uid
+     && request.resource.data.date is string;
+    allow update, delete: if false;
+   }
    match /expenses/{id} {
     allow read: if member(fid);
     allow create: if member(fid)
-     && request.resource.data.keys().hasOnly(['amount','description','payerId','payerName','split','createdBy','date','createdAt'])
+     && request.resource.data.keys().hasOnly(['amount','description','payerId','payerName','split','createdBy','date','createdAt','paid'])
      && request.resource.data.amount is int && request.resource.data.amount > 0
      && request.resource.data.amount <= 99999999999
      && request.resource.data.description is string
@@ -68,7 +80,13 @@ service cloud.firestore {
      && request.resource.data.payerId is string
      && (request.resource.data.payerId == 'shared' || request.resource.data.payerId in get(/databases/$(database)/documents/v2_families/$(fid)).data.memberIds)
      && request.resource.data.split in ['equal','none'];
-    allow update, delete: if false;
+    allow update: if member(fid)
+     && resource.data.paid != true
+     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paid','payerId','payerName'])
+     && request.resource.data.paid == true
+     && request.resource.data.payerName is string
+     && (request.resource.data.payerId == 'shared' || request.resource.data.payerId in get(/databases/$(database)/documents/v2_families/$(fid)).data.memberIds);
+    allow delete: if false;
    }
   }
  }
