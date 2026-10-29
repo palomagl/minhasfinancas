@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Finanças 2.0</title>
+  <meta name="description" content="Controle das despesas do mês: lance, repita por meses, marque como paga e veja o saldo a pagar.">
+  <meta name="theme-color" content="#172c2c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Finanças">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-2.svg">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="firebase-config.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+
+<!-- Abertura: rosa com o desenho da carteira no meio -->
+<div class="boot" id="boot">
+  <img class="boot-art" src="icons/splash.png" alt="Finanças 2.0" width="168" height="167">
+</div>
+
+<!-- Login -->
+<section class="login" id="loginScreen" hidden aria-labelledby="loginTitle">
+  <h1 class="login-title" id="loginTitle">Minhas<br><span>Finanças</span></h1>
+  <div class="login-actions">
+    <p class="login-error" id="loginError" role="alert" hidden></p>
+    <button class="google-btn" id="googleBtn" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      <span id="googleBtnText">Entrar com Google</span>
+    </button>
+  </div>
+</section>
+
+<!-- App -->
+<div class="app" id="app" hidden>
+  <header class="top">
+    <div class="top-row">
+      <span aria-hidden="true"></span>
+      <h1>Finanças 2.0</h1>
+      <button class="round-btn" id="menuBtn" type="button" aria-label="Mais opções" aria-haspopup="menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      </button>
+    </div>
+    <nav class="month" aria-label="Mês">
+      <button class="month-btn" id="prevBtn" type="button" aria-label="Mês anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="month-label" id="monthLabel" aria-live="polite"></div>
+      <button class="month-btn" id="nextBtn" type="button" aria-label="Próximo mês">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </nav>
+  </header>
+  <div class="notice" id="notice" hidden></div>
+  <main class="list" id="list" aria-label="Despesas do mês">
+    <div class="empty"><span>Carregando suas despesas…</span></div>
+  </main>
+  <footer class="summary">
+    <button class="fab" id="addBtn" type="button" aria-label="Nova despesa">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <div class="sum-row small"><span>Total</span><span class="num" id="totalVal">R$&nbsp;0,00</span></div>
+    <div class="sum-row big"><span>Saldo a pagar</span><span class="val num" id="balanceVal">R$&nbsp;0,00</span></div>
+  </footer>
+</div>
+
+<!-- Nova / editar despesa -->
+<section class="screen" id="formScreen" hidden aria-labelledby="formTitle">
+  <header class="top">
+    <div class="top-row">
+      <button class="round-btn" id="formBack" type="button" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h2 id="formTitle">Despesa</h2>
+      <span aria-hidden="true"></span>
+    </div>
+  </header>
+  <form class="form" id="expForm" novalidate autocomplete="off">
+    <label class="sr-only" for="fDesc">Descrição</label>
+    <input class="input" id="fDesc" name="desc" type="text" placeholder="Descrição" maxlength="80" enterkeyhint="next">
+    <label class="sr-only" for="fAmount">Valor</label>
+    <input class="input num" id="fAmount" name="amount" type="text" inputmode="numeric" placeholder="Valor" enterkeyhint="done">
+    <label class="sr-only" for="fDate">Data</label>
+    <input class="input num" id="fDate" name="date" type="date" required>
+
+    <div class="switch-row" id="repeatRow">
+      <span id="repeatLbl">Repetir</span>
+      <button class="switch" id="fRepeat" type="button" role="switch" aria-checked="false" aria-labelledby="repeatLbl"></button>
+    </div>
+    <div class="repeat-box" id="repeatBox" hidden>
+      <div class="repeat-line">
+        <span id="timesLbl">Repetir por</span>
+        <span class="stepper">
+          <button type="button" id="timesMinus" aria-label="Menos um mês">−</button>
+          <input id="fTimes" name="times" type="number" inputmode="numeric" min="2" max="120" value="2" aria-labelledby="timesLbl">
+          <button type="button" id="timesPlus" aria-label="Mais um mês">+</button>
+        </span>
+        <span>meses</span>
+      </div>
+      <p class="hint" id="repeatHint">Cria uma despesa por mês com o mesmo valor, numeradas 1/2, 2/2…</p>
+    </div>
+
+    <label class="check-row" id="applyNextRow" hidden>
+      <input type="checkbox" id="fApplyNext">
+      <span id="applyNextText">Aplicar descrição e valor também às próximas parcelas</span>
+    </label>
+
+    <p class="form-error" id="formError" role="alert" hidden></p>
+    <button class="btn-primary" id="saveBtn" type="submit">Salvar</button>
+  </form>
+</section>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
+</div>
+
+<div class="menu-layer" id="menuLayer" hidden>
+  <div class="menu" id="menu" role="menu" aria-label="Mais opções"></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+</body>
+</html>
