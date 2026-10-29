@@ -81,7 +81,7 @@ service cloud.firestore {
      && (request.resource.data.payerId == 'shared' || request.resource.data.payerId in get(/databases/$(database)/documents/v2_families/$(fid)).data.memberIds)
      && request.resource.data.split in ['equal','none'];
     allow update: if member(fid)
-     && resource.data.paid != true
+     && (!('paid' in resource.data) || resource.data.paid == false)
      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paid','payerId','payerName'])
      && request.resource.data.paid == true
      && request.resource.data.payerName is string
