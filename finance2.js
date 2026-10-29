@@ -11,7 +11,7 @@ const escapeHtml = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&
 const toCents = parseMoney;
 const randomCode = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), x=>x.toString(16).padStart(2,"0")).join("");
 const today = () => { const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-"); };
-let auth,db,user,months=[],movements=[],families=[],familyId=null,familyUnsub=null,familyMembersUnsub=null,familyExpenses=[],members=[],unsubs=[],mode="personal";
+let auth,db,user,months=[],movements=[],families=[],familyId=null,familyUnsub=null,familyMembersUnsub=null,familyIncomeUnsub=null,familyExpenses=[],familyIncomes=[],members=[],unsubs=[],mode="family";
 const root=document.createElement("section");root.id="v2Panel";root.className="v2-panel";root.hidden=true;document.body.append(root);
 const overview=document.createElement("div");overview.id="v2Overview";overview.className="v2-overview";overview.hidden=true;
 $("#notice")?.after(overview);
@@ -25,29 +25,18 @@ function formValue(id){return root.querySelector("#"+id)?.value?.trim()||"";}
 function paidTotal(){return months.flatMap(x=>x.items||[]).filter(x=>x.paid).reduce((sum,x)=>sum+(x.amount||0),0);}
 function personalBalance(){return availableBalance(movements,months);}
 function updateOverview(){
- const personal=mode==="personal";
- overview.hidden=!user;
- if(!user)return;
- const income=movements.filter(x=>x.kind==="income").reduce((s,x)=>s+x.amount,0);
- overview.innerHTML='<div class="v2-mode"><button id="v2Personal" class="'+(personal?"selected":"")+'">Pessoal</button><button id="v2Family" class="'+(!personal?"selected":"")+'">Família</button></div>'+
- (personal?'<div class="v2-balance"><small>Meu saldo disponível</small><strong>'+brl(personalBalance())+'</strong><span>Entradas: '+brl(income)+' · Despesas pagas: '+brl(paidTotal())+'</span></div><div class="v2-actions"><button id="v2Income">+ Entrada</button><button id="v2Adjust">Ajustar saldo</button><button id="v2History">Histórico</button></div>':
- '<div class="v2-balance"><small>Espaço compartilhado</small><strong>'+escapeHtml(families.find(f=>f.id===familyId)?.name||"Minha família")+'</strong><span>Registre as contas da casa e quem pagou.</span></div><div class="v2-actions"><button id="v2Families">Gerenciar família</button>'+(familyId?'<button id="v2NewFamilyExpense">+ Despesa</button>':'')+'</div><div id="v2FamilyList"></div>');
- $("#v2Personal").onclick=()=>switchMode("personal");
- $("#v2Family").onclick=()=>switchMode("family");
- if(personal){
- $("#v2Income").onclick=incomeForm;
- $("#v2Adjust").onclick=adjustForm;
- $("#v2History").onclick=historyView;
- }else{
- $("#v2Families").onclick=familyManager;
- if(familyId)$("#v2NewFamilyExpense").onclick=familyExpenseForm;
- renderFamilyList();
- }
- // O formulário original de despesas deve ser usado só no espaço pessoal.
- $("#addBtn").hidden=!personal;
- $("#list").hidden=!personal;
- $("#app .summary").hidden=!personal;
- $("#app .month").hidden=false;
+ overview.hidden=!user;if(!user)return;
+ const hasFamily=!!familyId, person=mode==="personal";
+ const income=movements.filter(x=>x.kind==="income").reduce((a,x)=>a+x.amount,0);
+ const familyMoney=familyIncomes.reduce((a,x)=>a+x.amount,0);
+ const familyPaid=familyExpenses.filter(x=>x.paid===true).reduce((a,x)=>a+x.amount,0);
+ overview.innerHTML='<div class="v2-mode"><button id="v2Family" class="'+(!person?"selected":"")+'">Família</button><button id="v2Personal" class="'+(person?"selected":"")+'">Pessoal</button></div>'+
+ (person?'<div class="v2-balance"><small>Meu saldo pessoal</small><strong>'+brl(personalBalance())+'</strong><span>Entradas pessoais: '+brl(income)+' · Despesas pagas: '+brl(paidTotal())+'</span></div><div class="v2-actions"><button id="v2Income">+ Entrada</button><button id="v2Adjust">Ajustar saldo</button><button id="v2History">Histórico</button></div>':
+ '<div class="v2-balance"><small>Saldo disponível da família</small><strong>'+brl(familyMoney-familyPaid)+'</strong><span>'+escapeHtml(families.find(f=>f.id===familyId)?.name||"Minha família")+' · Entradas: '+brl(familyMoney)+' · Pagamentos: '+brl(familyPaid)+'</span></div><div class="v2-actions">'+(hasFamily?'<button id="v2FamilyIncome">+ Entrada</button><button id="v2NewFamilyExpense">+ Despesa</button>':'')+'<button id="v2Families">'+(hasFamily?'Participantes e convite':'Criar ou entrar na família')+'</button></div><div id="v2FamilyList"></div>');
+ $("#v2Personal").onclick=()=>switchMode("personal");$("#v2Family").onclick=()=>switchMode("family");
+ if(person){$("#v2Income").onclick=incomeForm;$("#v2Adjust").onclick=adjustForm;$("#v2History").onclick=historyView;}
+ else{ $("#v2Families").onclick=familyManager;if(hasFamily){$("#v2FamilyIncome").onclick=familyIncomeForm;$("#v2NewFamilyExpense").onclick=familyExpenseForm;}renderFamilyList();}
+ $("#addBtn").hidden=!person;$("#list").hidden=!person;$("#app .summary").hidden=!person;$("#app .month").hidden=false;
 }
 function switchMode(m){mode=m;updateOverview();}
 // Month navigation is shared by Pessoal and Família.
@@ -81,19 +70,44 @@ function watchPersonal(){
  unsubs.push(onSnapshot(query(collection(db,"v2_families"),where("memberIds","array-contains",user.uid)),snap=>{families=snap.docs.map(d=>({id:d.id,...d.data()}));if(familyId&&!families.some(f=>f.id===familyId))selectFamily(null);if(!familyId&&families.length)selectFamily(families[0].id);else updateOverview();},err=>console.error(err)));
 }
 function selectFamily(id){
- familyUnsub?.();familyMembersUnsub?.();familyId=id;familyExpenses=[];members=[];
+ familyUnsub?.();familyMembersUnsub?.();familyIncomeUnsub?.();familyId=id;familyExpenses=[];familyIncomes=[];members=[];
  if(id){
  familyUnsub=onSnapshot(collection(db,"v2_families",id,"expenses"),s=>{familyExpenses=s.docs.map(d=>({id:d.id,...d.data()}));renderFamilyList();},e=>console.error(e));
+ familyIncomeUnsub=onSnapshot(collection(db,"v2_families",id,"incomes"),snap=>{familyIncomes=snap.docs.map(d=>({id:d.id,...d.data()}));updateOverview();},err=>{console.error("Entradas da família:",err);notify("Não foi possível carregar as entradas da família.");});
  familyMembersUnsub=onSnapshot(collection(db,"v2_families",id,"members"),s=>{members=s.docs.map(d=>({id:d.id,...d.data()}));renderFamilyList();},e=>console.error(e));
  }
  updateOverview();
 }
 function renderFamilyList(){
- const el=$("#v2FamilyList");if(!el)return;
- const month=selectedMonth(), current=familyExpenses.filter(x=>(x.date||"").startsWith(month));
- const total=current.reduce((n,x)=>n+(x.amount||0),0);
- const head='<div class="v2-month-summary"><span>Contas da família neste mês</span><strong>'+brl(total)+'</strong><small>'+current.length+' '+(current.length===1?'despesa':'despesas')+' registradas</small></div>';
- el.innerHTML=head+(current.length?current.sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(x=>'<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small>'+escapeHtml(x.payerId==="shared"?"Pagamento conjunto":(x.payerName||"Membro")+" pagou")+' · '+escapeHtml(x.split==="equal"?"Divisão igual entre membros":"Sem acerto entre membros")+'</small></div>').join(""):'<p class="v2-empty">Nenhuma despesa da família neste mês. Toque em “+ Despesa” para registrar a primeira.</p>');
+ const el=$("#v2FamilyList");if(!el||mode!=="family")return;
+ const month=selectedMonth(), expenses=familyExpenses.filter(x=>(x.date||"").startsWith(month));
+ const incomes=familyIncomes.filter(x=>(x.date||"").startsWith(month));
+ const incomeTotal=incomes.reduce((a,x)=>a+x.amount,0);
+ const due=expenses.reduce((a,x)=>a+x.amount,0),paid=expenses.filter(x=>x.paid===true).reduce((a,x)=>a+x.amount,0);
+ const entries=incomes.map(x=>'<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>+'+brl(x.amount)+'</strong><small>Entrada de '+escapeHtml(x.personName||"Família")+'</small></div>').join("");
+ const bills=expenses.sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(x=>{
+  const done=x.paid===true;
+  return '<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small>'+(done?'✓ Pago por '+escapeHtml(x.payerName||"Membro"):'Pendente · '+escapeHtml(x.date||""))+'</small>'+(!done?'<button class="v2-markpaid" data-paid="'+escapeHtml(x.id)+'">Marcar como paga</button>':'')+'</div>';
+ }).join("");
+ el.innerHTML='<div class="v2-month-summary"><span>Resumo do mês</span><strong>'+brl(incomeTotal)+' em entradas</strong><small>Contas: '+brl(due)+' · Pagas: '+brl(paid)+' · Pendentes: '+brl(due-paid)+'</small></div><h3 class="v2-section-title">Entradas</h3>'+(entries||'<p class="v2-empty">Nenhuma entrada neste mês.</p>')+'<h3 class="v2-section-title">Contas da casa</h3>'+(bills||'<p class="v2-empty">Nenhuma conta neste mês.</p>');
+ el.querySelectorAll("[data-paid]").forEach(btn=>btn.onclick=()=>markFamilyPaid(btn.dataset.paid));
+}
+function familyIncomeForm(){
+ if(!familyId)return familyManager();
+ const options=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
+ show("Entrada da família",'<p class="v2-helper">O dinheiro recebido entra no saldo único da família.</p><form id="v2Form">'+moneyInput("Quanto entrou? (R$)")+'<label>Descrição<input id="v2Desc" maxlength="80" placeholder="Salário, Pix, extra..." required></label><label>De quem é a entrada?<select id="v2Person">'+options+'</select></label><button class="v2-primary">Salvar entrada</button></form>');
+ $("#v2Form").onsubmit=async e=>{e.preventDefault();const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),personId=formValue("v2Person");if(!(amount>0&&amount<=99999999999&&description&&personId))return notify("Preencha valor, descrição e pessoa.");
+ const btn=$("#v2Form .v2-primary");btn.disabled=true;btn.textContent="Salvando…";
+ try{await addDoc(collection(db,"v2_families",familyId,"incomes"),{amount,description,personId,personName:members.find(m=>m.id===personId)?.name||"Membro",date:today(),createdBy:user.uid,createdAt:serverTimestamp()});root.hidden=true;notify("Entrada adicionada ao saldo da família.");}
+ catch(err){console.error(err);btn.disabled=false;btn.textContent="Salvar entrada";notify("Não foi possível salvar. Verifique as regras do Firebase.");}};
+}
+function markFamilyPaid(id){
+ const exp=familyExpenses.find(x=>x.id===id);if(!exp||exp.paid===true)return;
+ const options=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
+ show("Confirmar pagamento",'<p><strong>'+escapeHtml(exp.description)+'</strong> · '+brl(exp.amount)+'</p><form id="v2Form"><label>Quem pagou?<select id="v2Payer">'+options+'<option value="shared">Pagamos juntos</option></select></label><button class="v2-primary">Confirmar pagamento</button></form>');
+ $("#v2Form").onsubmit=async e=>{e.preventDefault();const payerId=formValue("v2Payer");const btn=$("#v2Form .v2-primary");btn.disabled=true;btn.textContent="Confirmando…";
+ try{await updateDoc(doc(db,"v2_families",familyId,"expenses",id),{paid:true,payerId,payerName:payerId==="shared"?"Pagamos juntos":members.find(m=>m.id===payerId)?.name||"Membro"});root.hidden=true;notify("Pagamento registrado.");}
+ catch(err){console.error(err);btn.disabled=false;btn.textContent="Confirmar pagamento";notify("Não foi possível registrar o pagamento.");}};
 }
 function familyManager(){
  const f=families[0];
@@ -151,14 +165,15 @@ function familyExpenseForm(){
  const options=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
  const month=selectedMonth();
  const defaultDate=today().startsWith(month)?today():month+"-01";
- show("Nova despesa da família",'<p class="v2-helper">Exemplo: conta de luz de R$ 200, paga pela Marisa. Todos da família poderão ver.</p><form id="v2Form"><label>Descrição<input id="v2Desc" maxlength="80" required placeholder="Ex.: Conta de luz"></label>'+moneyInput("Valor (R$)")+'<label>Data<input type="date" id="v2Date" value="'+defaultDate+'" required></label><label>Quem pagou esta conta?<select id="v2Payer" required>'+options+'<option value="shared">Pagamos juntos</option></select></label><label>Como considerar a divisão?<select id="v2Split"><option value="none">Só registrar quem pagou</option><option value="equal">Dividir igualmente entre membros</option></select></label><label class="v2-repeat"><input id="v2Recurring" type="checkbox"> Conta fixa / repetir mensalmente</label><div id="v2RepeatBox" hidden><label>Tipo de repetição<select id="v2RepeatType"><option value="fixed">Conta fixa (próximos 12 meses)</option><option value="installments">Parcelada (quantidade de parcelas)</option></select></label><label id="v2CountRow" hidden>Quantas parcelas?<input id="v2Count" type="number" min="2" max="24" value="6"></label><p class="v2-helper">Conta fixa: gera os próximos 12 meses. Parcelada: gera apenas a quantidade selecionada. Cada lançamento poderá ser identificado pelo mês.</p></div><p class="v2-helper" id="v2SplitHelp">A despesa aparece para a família, mas não gera cobrança entre pessoas nem desconta outro saldo.</p><button class="v2-primary">Salvar despesa</button></form>');
+ show("Nova despesa da família",'<p class="v2-helper">Exemplo: conta de luz de R$ 200, paga pela Marisa. Todos da família poderão ver.</p><form id="v2Form"><label>Descrição<input id="v2Desc" maxlength="80" required placeholder="Ex.: Conta de luz"></label>'+moneyInput("Valor (R$)")+'<label>Data<input type="date" id="v2Date" value="'+defaultDate+'" required></label><label>Quem vai pagar?<select id="v2Payer" required>'+options+'<option value="shared">Pagamos juntos</option></select></label><label class="v2-repeat"><input id="v2Paid" type="checkbox"> Esta conta já foi paga</label><label class="v2-repeat"><input id="v2Recurring" type="checkbox"> Conta fixa / repetir mensalmente</label><div id="v2RepeatBox" hidden><label>Tipo de repetição<select id="v2RepeatType"><option value="fixed">Conta fixa (próximos 12 meses)</option><option value="installments">Parcelada (quantidade de parcelas)</option></select></label><label id="v2CountRow" hidden>Quantas parcelas?<input id="v2Count" type="number" min="2" max="24" value="6"></label><p class="v2-helper">Conta fixa: gera os próximos 12 meses. Parcelada: gera apenas a quantidade selecionada. Cada lançamento poderá ser identificado pelo mês.</p></div><p class="v2-helper">A conta só será descontada do saldo da família quando for marcada como paga.</p><button class="v2-primary">Salvar despesa</button></form>');
  $("#v2Recurring").onchange=()=>{$("#v2RepeatBox").hidden=!$("#v2Recurring").checked;};
  $("#v2RepeatType").onchange=()=>{$("#v2CountRow").hidden=$("#v2RepeatType").value!=="installments";};
- $("#v2Split").onchange=()=>{$("#v2SplitHelp").textContent=formValue("v2Split")==="equal"?"A divisão será informativa: ainda não há transferência ou acerto automático de saldos.":"A despesa aparece para a família, mas não gera cobrança entre pessoas nem desconta outro saldo.";};
- $("#v2Form").onsubmit=async e=>{e.preventDefault();const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),payerId=formValue("v2Payer"),split=formValue("v2Split"),date=formValue("v2Date");if(!(amount>0&&amount<=99999999999&&description&&/^\d{4}-\d{2}-\d{2}$/.test(date)))return notify("Informe descrição, valor e data.");
+
+ $("#v2Form").onsubmit=async e=>{e.preventDefault();const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),payerId=formValue("v2Payer"),date=formValue("v2Date");if(!(amount>0&&amount<=99999999999&&description&&/^\d{4}-\d{2}-\d{2}$/.test(date)))return notify("Informe descrição, valor e data.");
  const btn=$("#v2Form button[type=submit],#v2Form button.v2-primary");btn.disabled=true;btn.textContent="Salvando…";
  try{
   const repeating=$("#v2Recurring").checked;
+  const paid=$("#v2Paid").checked;
   const kind=repeating?$("#v2RepeatType").value:"once";
   const count=kind==="fixed"?12:kind==="installments"?Number($("#v2Count").value):1;
   if(!Number.isInteger(count)||count<1||count>24||(kind==="installments"&&count<2)){btn.disabled=false;btn.textContent="Salvar despesa";return notify("Escolha entre 2 e 24 parcelas.");}
@@ -169,7 +184,7 @@ function familyExpenseForm(){
    const due=dates[i];
    const label=kind==="installments"?description+" ("+(i+1)+"/"+count+")":description;
    const ref=doc(col);
-   batch.set(ref,{amount,description:label,payerId,payerName:payerId==="shared"?"Pagamos juntos":members.find(m=>m.id===payerId)?.name||"Membro",split,createdBy:user.uid,date:due,createdAt:serverTimestamp()});
+   batch.set(ref,{amount,description:label,payerId,payerName:payerId==="shared"?"Pagamos juntos":members.find(m=>m.id===payerId)?.name||"Membro",split:"none",paid:paid&&i===0,createdBy:user.uid,date:due,createdAt:serverTimestamp()});
   }
   await batch.commit();
   root.hidden=true;notify(count===1?"Despesa da família salva.":count+" meses registrados com sucesso.");
