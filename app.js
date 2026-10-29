@@ -133,6 +133,7 @@ async function boot() {
   }
   $("#googleBtnText").textContent = "Entrar com Google";
   const app = initializeApp(cfg);
+  window.dispatchEvent(new CustomEvent("financas2:firebase-ready"));
   auth = getAuth(app);
   auth.languageCode = "pt-BR";
   try {
