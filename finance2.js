@@ -1,6 +1,6 @@
 // Finanças 2.0 — receitas, saldo e espaços familiares.
 // Este módulo usa o Firebase existente, usando coleções exclusivas da v2.
-import { parseMoney, recurrenceDates, availableBalance } from "./finance-core.mjs";
+import { parseMoney, recurrenceDates, availableBalance, householdBalance } from "./finance-core.mjs";
 import { getApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, arrayUnion, deleteDoc, onSnapshot, query, where, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
@@ -28,8 +28,7 @@ function updateOverview(){
  overview.hidden=!user;if(!user)return;
  const hasFamily=!!familyId, person=mode==="personal"&&!families.length;
  const income=movements.filter(x=>x.kind==="income").reduce((a,x)=>a+x.amount,0);
- const familyMoney=familyIncomes.reduce((a,x)=>a+x.amount,0);
- const familyPaid=familyExpenses.filter(x=>x.paid===true).reduce((a,x)=>a+x.amount,0);
+ const {income:familyMoney,paid:familyPaid}=householdBalance(familyIncomes,familyExpenses);
  overview.innerHTML=(families.length?"":'<div class="v2-mode"><button id="v2Family" class="'+(!person?"selected":"")+'">Família</button><button id="v2Personal" class="'+(person?"selected":"")+'">Pessoal</button></div>')+
  (person?'<div class="v2-balance"><small>Meu saldo pessoal</small><strong>'+brl(personalBalance())+'</strong><span>Entradas pessoais: '+brl(income)+' · Despesas pagas: '+brl(paidTotal())+'</span></div><div class="v2-actions"><button id="v2Income">+ Entrada</button><button id="v2Adjust">Ajustar saldo</button><button id="v2History">Histórico</button></div>':
  '<div class="v2-balance"><small>Saldo disponível da família</small><strong>'+brl(familyMoney-familyPaid)+'</strong><span class="v2-family-name">'+escapeHtml(families.find(f=>f.id===familyId)?.name||"Minha família")+'</span><div class="v2-balance-details"><span>Recebido <b>'+brl(familyMoney)+'</b></span><span>Pago <b>'+brl(familyPaid)+'</b></span></div></div><div class="v2-actions">'+(hasFamily?'<button id="v2FamilyIncome">+ Entrada</button><button id="v2NewFamilyExpense">+ Despesa</button>':'')+'<button id="v2Families">'+(hasFamily?'Participantes e convite':'Criar ou entrar na família')+'</button></div><div id="v2FamilyList"></div>');
