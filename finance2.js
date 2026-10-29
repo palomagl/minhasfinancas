@@ -96,10 +96,10 @@ function renderFamilyList(){
 function familyIncomeForm(){
  if(!familyId)return familyManager();
  const options=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
- show("Entrada da família",'<p class="v2-helper">O dinheiro recebido entra no saldo único da família.</p><form id="v2Form">'+moneyInput("Quanto entrou? (R$)")+'<label>Descrição<input id="v2Desc" maxlength="80" placeholder="Salário, Pix, extra..." required></label><label>De quem é a entrada?<select id="v2Person">'+options+'</select></label><button class="v2-primary">Salvar entrada</button></form>');
- $("#v2Form").onsubmit=async e=>{e.preventDefault();const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),personId=formValue("v2Person");if(!(amount>0&&amount<=99999999999&&description&&personId))return notify("Preencha valor, descrição e pessoa.");
+ show("Entrada da família",'<p class="v2-helper">O dinheiro recebido entra no saldo único da família.</p><form id="v2Form">'+moneyInput("Quanto entrou? (R$)")+'<label>Descrição<input id="v2Desc" maxlength="80" placeholder="Salário, Pix, extra..." required></label><label>Data da entrada<input id="v2IncomeDate" type="date" value="'+(today().startsWith(selectedMonth())?today():selectedMonth()+"-01")+'" required></label><label>De quem é a entrada?<select id="v2Person">'+options+'</select></label><button class="v2-primary">Salvar entrada</button></form>');
+ $("#v2Form").onsubmit=async e=>{e.preventDefault();const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),personId=formValue("v2Person"),incomeDate=formValue("v2IncomeDate");if(!(amount>0&&amount<=99999999999&&description&&personId&&/^\d{4}-\d{2}-\d{2}$/.test(incomeDate)))return notify("Preencha valor, descrição e pessoa.");
  const btn=$("#v2Form .v2-primary");btn.disabled=true;btn.textContent="Salvando…";
- try{await addDoc(collection(db,"v2_families",familyId,"incomes"),{amount,description,personId,personName:members.find(m=>m.id===personId)?.name||"Membro",date:today(),createdBy:user.uid,createdAt:serverTimestamp()});root.hidden=true;notify("Entrada adicionada ao saldo da família.");}
+ try{await addDoc(collection(db,"v2_families",familyId,"incomes"),{amount,description,personId,personName:members.find(m=>m.id===personId)?.name||"Membro",date:incomeDate,createdBy:user.uid,createdAt:serverTimestamp()});root.hidden=true;notify("Entrada adicionada ao saldo da família.");}
  catch(err){console.error(err);btn.disabled=false;btn.textContent="Salvar entrada";notify("Não foi possível salvar. Verifique as regras do Firebase.");}};
 }
 function markFamilyPaid(id){
@@ -153,7 +153,7 @@ function joinFamilyForm(){
  if(families.length){notify("Você já participa de uma família.");return;}
  show("Entrar na família",'<form id="v2Form"><label>Código do convite<input id="v2Code" autocomplete="off" required placeholder="Cole o código recebido"></label><button class="v2-primary">Entrar</button></form>');
  $("#v2Form").onsubmit=async e=>{e.preventDefault();const code=formValue("v2Code").toLowerCase();if(!/^[a-f0-9]{32}$/.test(code))return notify("Código inválido.");if(families.length)return notify("Você já tem uma família.");const btn=$("#v2Form button");btn.disabled=true;btn.textContent="Entrando…";try{
- const inv=await getDoc(doc(db,"v2_invites",code));if(!inv.exists()||!inv.data().active||inv.data().expiresAt<Date.now())return notify("Convite inválido ou expirado.");
+ const inv=await getDoc(doc(db,"v2_invites",code));if(!inv.exists()||!inv.data().active||inv.data().expiresAt<Date.now()){btn.disabled=false;btn.textContent="Entrar";return notify("Convite inválido ou expirado.");}
  const fid=inv.data().familyId;
  await setDoc(doc(db,"v2_families",fid,"members",user.uid),{name:user.displayName||"Membro",inviteId:code,joinedAt:serverTimestamp()});
  await updateDoc(doc(db,"v2_families",fid),{memberIds:arrayUnion(user.uid)});
@@ -183,7 +183,8 @@ function familyExpenseForm(){
   const dates=recurrenceDates(date,count);
   for(let i=0;i<dates.length;i++){
    const due=dates[i];
-   const label=kind==="installments"?description+" ("+(i+1)+"/"+count+")":description;
+   const suffix=kind==="installments"?" ("+(i+1)+"/"+count+")":"";
+   const label=description.slice(0,80-suffix.length)+suffix;
    const ref=doc(col);
    batch.set(ref,{amount,description:label,payerId,payerName:payerId==="shared"?"Pagamos juntos":members.find(m=>m.id===payerId)?.name||"Membro",split:"none",paid:paid&&i===0,createdBy:user.uid,date:due,createdAt:serverTimestamp()});
   }
