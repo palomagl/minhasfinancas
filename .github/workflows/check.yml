@@ -11,6 +11,8 @@ jobs:
         run: |
           node --check app.js
           node --check finance2.js
+          node --check finance-core.mjs
+          node --test tests/*.test.mjs
           node -e 'JSON.parse(require("fs").readFileSync("manifest.webmanifest","utf8"))'
       - name: Ensure Finanças 2.0 uses separate collections
         run: |
