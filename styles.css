@@ -429,3 +429,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .google-btn:focus-visible { outline:3px solid var(--focus);outline-offset:3px; }
 @media(max-height:600px){.login{padding-top:calc(env(safe-area-inset-top,0px) + 40px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px);}}
 @media(prefers-reduced-motion:reduce){.boot-art{animation:none}.boot{transition:none}}
+
+/* Family and personal spaces share the same month navigation. */
+.v2-month-summary{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;display:flex;flex-direction:column;gap:4px}
+.v2-month-summary span,.v2-month-summary small{font-size:13px;color:var(--muted)}
+.v2-month-summary strong{font-family:var(--font-display);font-size:23px}
+.v2-helper{color:var(--muted);font-size:13px;line-height:1.5;margin:0 0 8px}
