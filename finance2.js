@@ -84,15 +84,23 @@ function renderFamilyList(){
  const incomes=familyIncomes.filter(x=>(x.date||"").startsWith(month));
  const incomeTotal=incomes.reduce((a,x)=>a+x.amount,0);
  const due=expenses.reduce((a,x)=>a+x.amount,0),paid=expenses.filter(x=>x.paid===true).reduce((a,x)=>a+x.amount,0);
- const entries=incomes.sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(x=>'<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>+'+brl(x.amount)+'</strong><small>Entrada de '+escapeHtml(x.personName||"Família")+'</small><button class="v2-edit" data-edit-income="'+escapeHtml(x.id)+'" aria-label="Editar entrada">Editar</button></div>').join("");
+ const entries=incomes.sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(x=>'<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>+'+brl(x.amount)+'</strong><small>Entrada de '+escapeHtml(x.personName||"Família")+'</small><button class="v2-item-more" data-menu-income="'+escapeHtml(x.id)+'" aria-label="Opções da entrada" aria-haspopup="dialog">⋯</button></div>').join("");
  const bills=expenses.sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(x=>{
   const done=x.paid===true;
-  return '<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small class="'+(done?'v2-paid-status':'v2-pending-status')+'">'+(done?'✓ Pago por '+escapeHtml(x.payerName||"Membro"):'● Pendente · '+escapeHtml(x.date||""))+'</small><button class="v2-edit" data-edit-expense="'+escapeHtml(x.id)+'" aria-label="Editar despesa">Editar</button>'+(!done?'<button class="v2-markpaid" data-paid="'+escapeHtml(x.id)+'">✓ Registrar pagamento</button>':'')+'</div>';
+  return '<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small class="'+(done?'v2-paid-status':'v2-pending-status')+'">'+(done?'✓ Pago por '+escapeHtml(x.payerName||"Membro"):'● Pendente · '+escapeHtml(x.date||""))+'</small><button class="v2-item-more" data-menu-expense="'+escapeHtml(x.id)+'" aria-label="Opções da despesa" aria-haspopup="dialog">⋯</button>'+(!done?'<button class="v2-markpaid" data-paid="'+escapeHtml(x.id)+'">✓ Registrar pagamento</button>':'')+'</div>';
  }).join("");
  el.innerHTML='<div class="v2-month-summary"><span>Resumo de '+escapeHtml(month)+'</span><div class="v2-summary-grid"><div><small>Entradas</small><strong>'+brl(incomeTotal)+'</strong></div><div><small>Contas pagas</small><strong>'+brl(paid)+'</strong></div><div><small>A pagar</small><strong>'+brl(due-paid)+'</strong></div></div></div><h3 class="v2-section-title">Entradas</h3>'+(entries||'<p class="v2-empty">Nenhuma entrada neste mês.</p>')+'<h3 class="v2-section-title">Contas da casa</h3>'+(bills||'<p class="v2-empty">Nenhuma conta neste mês.</p>');
  el.querySelectorAll("[data-paid]").forEach(btn=>btn.onclick=()=>markFamilyPaid(btn.dataset.paid));
- el.querySelectorAll("[data-edit-income]").forEach(btn=>btn.onclick=()=>editFamilyEntry("incomes",btn.dataset.editIncome));
- el.querySelectorAll("[data-edit-expense]").forEach(btn=>btn.onclick=()=>editFamilyEntry("expenses",btn.dataset.editExpense));
+ el.querySelectorAll("[data-menu-income]").forEach(btn=>btn.onclick=()=>entryActions("incomes",btn.dataset.menuIncome));
+ el.querySelectorAll("[data-menu-expense]").forEach(btn=>btn.onclick=()=>entryActions("expenses",btn.dataset.menuExpense));
+}
+function entryActions(type,id){
+ const isIncome=type==="incomes";
+ const item=(isIncome?familyIncomes:familyExpenses).find(x=>x.id===id);
+ if(!item)return notify("Lançamento não encontrado.");
+ show("Opções do lançamento",'<div class="v2-entry-actions"><div class="v2-entry-detail"><strong>'+escapeHtml(item.description)+'</strong><span>'+brl(item.amount)+'</span></div><button id="v2ActionEdit" class="v2-primary">✎ Editar informações</button><button id="v2ActionClose">Cancelar</button></div>');
+ $("#v2ActionEdit").onclick=()=>editFamilyEntry(type,id);
+ $("#v2ActionClose").onclick=()=>root.hidden=true;
 }
 function editFamilyEntry(type,id){
  const isIncome=type==="incomes";
