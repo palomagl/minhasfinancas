@@ -2,14 +2,14 @@
 // Este módulo usa o Firebase NOVO da v2, nunca o projeto original.
 import { getApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, addDoc, setDoc, deleteDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, arrayUnion, deleteDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const $ = s => document.querySelector(s);
 const brl = cents => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(cents/100);
 const escapeHtml = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const toCents = value => { const s=String(value).trim().replace(/\s/g,"").replace(/\./g,"").replace(",","."); const n=Number(s); return Number.isFinite(n)?Math.round(n*100):NaN; };
 const randomCode = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), x=>x.toString(16).padStart(2,"0")).join("");
-const today = () => new Date().toISOString().slice(0,10);
+const today = () => { const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-"); };
 let auth,db,user,months=[],movements=[],families=[],familyId=null,familyUnsub=null,familyMembersUnsub=null,familyExpenses=[],members=[],unsubs=[],mode="personal";
 const root=document.createElement("section");root.id="v2Panel";root.className="v2-panel";root.hidden=true;document.body.append(root);
 const overview=document.createElement("div");overview.id="v2Overview";overview.className="v2-overview";overview.hidden=true;
@@ -112,9 +112,8 @@ function joinFamilyForm(){
  $("#v2Form").onsubmit=async e=>{e.preventDefault();const code=formValue("v2Code").toLowerCase();if(!/^[a-f0-9]{32}$/.test(code))return notify("Código inválido.");try{
  const inv=await getDoc(doc(db,"invites",code));if(!inv.exists()||!inv.data().active||inv.data().expiresAt<Date.now())return notify("Convite inválido ou expirado.");
  const fid=inv.data().familyId;
- const f=await getDoc(doc(db,"families",fid));if(!f.exists())return notify("Família indisponível.");
  await setDoc(doc(db,"families",fid,"members",user.uid),{name:user.displayName||"Membro",inviteId:code,joinedAt:serverTimestamp()});
- // A entrada só conclui depois da atualização autorizada do membro na família.
+ await updateDoc(doc(db,"families",fid),{memberIds:arrayUnion(user.uid)});
  selectFamily(fid);root.hidden=true;notify("Você entrou na família.");
  }catch(err){console.error(err);notify("Não foi possível entrar. Confira o código.");}};
 }
