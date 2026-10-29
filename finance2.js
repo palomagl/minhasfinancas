@@ -68,7 +68,7 @@ function watchPersonal(){
  unsubs.forEach(fn=>fn());unsubs=[];
  unsubs.push(onSnapshot(collection(db,"v2_users",user.uid,"months"),snap=>{months=snap.docs.map(d=>d.data());updateOverview();},err=>console.error(err)));
  unsubs.push(onSnapshot(collection(db,"v2_users",user.uid,"movements"),snap=>{movements=snap.docs.map(d=>({id:d.id,...d.data()}));updateOverview();},err=>{console.error("Movimentações:",err);notify(err?.code==="permission-denied"?"Firestore sem regras v2 publicadas.":"Não foi possível carregar as entradas.");}));
- unsubs.push(onSnapshot(query(collection(db,"v2_families"),where("memberIds","array-contains",user.uid)),snap=>{families=snap.docs.map(d=>({id:d.id,...d.data()}));if(familyId&&!families.some(f=>f.id===familyId))selectFamily(null);updateOverview();},err=>console.error(err)));
+ unsubs.push(onSnapshot(query(collection(db,"v2_families"),where("memberIds","array-contains",user.uid)),snap=>{families=snap.docs.map(d=>({id:d.id,...d.data()}));if(familyId&&!families.some(f=>f.id===familyId))selectFamily(null);if(!familyId&&families.length)selectFamily(families[0].id);else updateOverview();},err=>console.error(err)));
 }
 function selectFamily(id){
  familyUnsub?.();familyMembersUnsub?.();familyId=id;familyExpenses=[];members=[];
@@ -83,39 +83,43 @@ function renderFamilyList(){
  el.innerHTML=familyExpenses.length?familyExpenses.map(x=>'<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small>Pago por: '+escapeHtml(x.payerName||"Não informado")+' · '+escapeHtml(x.split==="equal"?"Dividido igualmente":x.split==="shared"?"Pagamento conjunto":"Sem divisão")+'</small></div>').join(""):'<p class="v2-empty">Nenhuma despesa compartilhada.</p>';
 }
 function familyManager(){
- show("Minha família",'<div class="v2-stack">'+families.map(f=>'<button class="v2-choice" data-family="'+escapeHtml(f.id)+'">'+escapeHtml(f.name)+'</button>').join("")+'<button id="v2Create">Criar família</button><button id="v2Join">Entrar com código</button>'+(familyId?'<button id="v2Invite">Convidar pessoa</button>':'')+'</div>');
- root.querySelectorAll("[data-family]").forEach(b=>b.onclick=()=>{selectFamily(b.dataset.family);root.hidden=true;});
- $("#v2Create").onclick=createFamilyForm;
- $("#v2Join").onclick=joinFamilyForm;
- if(familyId)$("#v2Invite").onclick=inviteFamily;
+ const f=families[0];
+ if(f && !familyId) selectFamily(f.id);
+ show("Minha família",'<div class="v2-stack">'+(f?'<div class="v2-family-summary"><strong>'+escapeHtml(f.name)+'</strong><small>Seu espaço compartilhado</small></div><button id="v2Invite">Convidar pessoa</button>':'<p>Organize contas e despesas com quem mora com você.</p><button id="v2Create">Criar família</button><button id="v2Join">Entrar com código</button>')+'</div>');
+ if(f) $("#v2Invite").onclick=inviteFamily;
+ else {$("#v2Create").onclick=createFamilyForm;$("#v2Join").onclick=joinFamilyForm;}
 }
 function createFamilyForm(){
+ if(families.length){notify("Você já participa de uma família.");return;}
  show("Criar família",'<form id="v2Form"><label>Nome<input id="v2Name" maxlength="50" placeholder="Nossa casa" required></label><button class="v2-primary">Criar família</button></form>');
- $("#v2Form").onsubmit=async e=>{e.preventDefault();const name=formValue("v2Name");if(!name)return;try{
+ $("#v2Form").onsubmit=async e=>{e.preventDefault();const name=formValue("v2Name");if(!name)return;if(families.length)return notify("Você já tem uma família.");const btn=$("#v2Form button");btn.disabled=true;btn.textContent="Criando família…";try{
  const ref=doc(collection(db,"v2_families"));await setDoc(ref,{name,ownerId:user.uid,memberIds:[user.uid],createdAt:serverTimestamp()});
  await setDoc(doc(db,"v2_families",ref.id,"members",user.uid),{name:user.displayName||"Eu",joinedAt:serverTimestamp()});
  selectFamily(ref.id);root.hidden=true;notify("Família criada.");
- }catch(err){console.error("Criar família:",err);notify(err?.code==="permission-denied"?"Sem permissão no Firestore. Publique as regras da versão 2.0 na aba Regras do Firebase.":"Não foi possível criar família: "+(err?.code||"verifique a conexão"));}};
+ }catch(err){btn.disabled=false;btn.textContent="Criar família";console.error("Criar família:",err);notify(err?.code==="permission-denied"?"Sem permissão no Firestore. Publique as regras da versão 2.0 na aba Regras do Firebase.":"Não foi possível criar família: "+(err?.code||"verifique a conexão"));}};
 }
 async function inviteFamily(){
- const f=families.find(x=>x.id===familyId);if(!f)return;
+ const f=families.find(x=>x.id===(familyId||families[0]?.id));if(!f)return;
+ if(!familyId)selectFamily(f.id);
  if(f.ownerId!==user.uid)return notify("Somente o administrador pode convidar.");
  try{
+ const btn=$("#v2Invite");if(btn){btn.disabled=true;btn.textContent="Gerando convite…";}
  const code=randomCode();
  await setDoc(doc(db,"v2_invites",code),{familyId,ownerId:user.uid,expiresAt:Date.now()+24*60*60*1000,active:true});
  show("Convidar pessoa",'<p>Envie este código à pessoa. Ele expira em 24 horas.</p><div class="v2-code">'+escapeHtml(code)+'</div><button id="v2Copy" class="v2-primary">Copiar código</button>');
  $("#v2Copy").onclick=async()=>{try{await navigator.clipboard.writeText(code);notify("Código copiado.");}catch(e){notify("Selecione e copie o código.");}};
- }catch(err){console.error(err);notify("Falha ao criar convite.");}
+ }catch(err){console.error(err);notify("Falha ao criar convite.");const btn=$("#v2Invite");if(btn){btn.disabled=false;btn.textContent="Convidar pessoa";}}
 }
 function joinFamilyForm(){
+ if(families.length){notify("Você já participa de uma família.");return;}
  show("Entrar na família",'<form id="v2Form"><label>Código do convite<input id="v2Code" autocomplete="off" required placeholder="Cole o código recebido"></label><button class="v2-primary">Entrar</button></form>');
- $("#v2Form").onsubmit=async e=>{e.preventDefault();const code=formValue("v2Code").toLowerCase();if(!/^[a-f0-9]{32}$/.test(code))return notify("Código inválido.");try{
+ $("#v2Form").onsubmit=async e=>{e.preventDefault();const code=formValue("v2Code").toLowerCase();if(!/^[a-f0-9]{32}$/.test(code))return notify("Código inválido.");if(families.length)return notify("Você já tem uma família.");const btn=$("#v2Form button");btn.disabled=true;btn.textContent="Entrando…";try{
  const inv=await getDoc(doc(db,"v2_invites",code));if(!inv.exists()||!inv.data().active||inv.data().expiresAt<Date.now())return notify("Convite inválido ou expirado.");
  const fid=inv.data().familyId;
  await setDoc(doc(db,"v2_families",fid,"members",user.uid),{name:user.displayName||"Membro",inviteId:code,joinedAt:serverTimestamp()});
  await updateDoc(doc(db,"v2_families",fid),{memberIds:arrayUnion(user.uid)});
  selectFamily(fid);root.hidden=true;notify("Você entrou na família.");
- }catch(err){console.error(err);notify("Não foi possível entrar. Confira o código.");}};
+ }catch(err){console.error(err);btn.disabled=false;btn.textContent="Entrar";notify("Não foi possível entrar. Confira o código.");}};
 }
 function familyExpenseForm(){
  const options=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
