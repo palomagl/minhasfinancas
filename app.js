@@ -174,7 +174,7 @@ const Store = {
   start(userId) {
     this.stop();
     state.ready = false; render();
-    this.col = collection(db, "users", userId, "months");
+    this.col = collection(db, "v2_users", userId, "months");
     this.unsub = onSnapshot(this.col, (snap) => {
       const next = {};
       snap.forEach((d) => { const data = d.data(); if (data && Array.isArray(data.items)) next[d.id] = data.items; });
