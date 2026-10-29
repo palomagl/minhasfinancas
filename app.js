@@ -51,7 +51,7 @@ const state = { y: now.getFullYear(), m: now.getMonth() + 1, ready: false, user:
 
 /* ================= screens ================= */
 // A abertura rosa fica pelo menos BOOT_MIN ms na tela e depois some suavemente.
-const BOOT_MIN = 1300;
+const BOOT_MIN = 750;
 const bootStart = performance.now();
 let bootDone = false, pendingScreen = null, pendingTimer = null;
 
@@ -131,6 +131,7 @@ async function boot() {
     loginError("Falta a configuração do Firebase: preencha o arquivo firebase-config.js.");
     return;
   }
+  $("#googleBtnText").textContent = "Entrar com Google";
   const app = initializeApp(cfg);
   auth = getAuth(app);
   auth.languageCode = "pt-BR";
