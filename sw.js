@@ -1,7 +1,7 @@
 // Guarda o app no aparelho para abrir rápido e funcionar sem internet.
-const CACHE = "minhas-financas-v4";
+const CACHE = "financas-2-v1";
 const SHELL = [
-  "./", "index.html", "styles.css", "app.js", "firebase-config.js", "manifest.webmanifest",
+  "./", "index.html", "styles.css", "app.js", "firebase-config.js", "manifest.webmanifest", "icons/favicon-2.svg",
   "icons/splash.png", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png",
 ];
 
