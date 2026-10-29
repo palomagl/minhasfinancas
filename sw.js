@@ -1,8 +1,8 @@
 // Guarda o app no aparelho para abrir rápido e funcionar sem internet.
-const CACHE = "financas-2-v1";
+const CACHE = "financas-2-v3";
 const SHELL = [
-  "./", "index.html", "styles.css", "app.js", "firebase-config.js", "manifest.webmanifest", "icons/favicon-2.svg",
-  "icons/splash.png", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png",
+  "./", "index.html", "styles.css", "app.js", "firebase-config.js", "manifest.webmanifest", "finance2.js", "icons/favicon-2.svg",
+  "icons/splash-2.svg", "icons/logo-2.svg",
 ];
 
 self.addEventListener("install", (e) => {
