@@ -1,35 +1,35 @@
-/* Minhas Finanças — tema rosa claro */
+/* Finanças 2.0 — paleta neutra, verde-sálvia e grafite */
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
   /* Finanças 2.0: neutral sage palette. */
   --ground: #F6F8F5;
   --surface: #FFFFFF;
-  --ink: #3A1F2B;
-  --muted: #8A6573;
+  --ink: #172C2C;
+  --muted: #65746D;
   --line: #DCE5DF;
   --brand: #A4D8C4;
   --splash: #E4F1EA;
   --brand-deep: #8BCDB4;
-  --on-brand: #4A1D31;
-  --on-brand-soft: rgba(74,29,49,.72);
+  --on-brand: #172C2C;
+  --on-brand-soft: rgba(23,44,44,.72);
   --brand-chip: rgba(255,255,255,.55);
   --brand-chip-hover: rgba(255,255,255,.8);
-  --accent: #D9467A;
-  --accent-press: #C23566;
+  --accent: #26745F;
+  --accent-press: #1E604E;
   --accent-soft: #9ED3BE;
-  --brand-text: #C23566;
+  --brand-text: #1E604E;
   --on-accent: #FFFFFF;
   --paid: #2F8A63;
   --paid-bg: #DDF2E7;
   --danger: #B42318;
-  --scrim: rgba(58,20,38,.40);
+  --scrim: rgba(15,35,31,.40);
   --field: #FFFFFF;
-  --field-line: #EBC3D2;
-  --focus: #D9467A;
-  --focus-ring: rgba(217,70,122,.22);
-  --shadow: 0 10px 28px rgba(120,30,70,.16);
-  --fab-shadow: 0 6px 18px rgba(170,40,90,.35);
+  --field-line: #CBDCD2;
+  --focus: #26745F;
+  --focus-ring: rgba(38,116,95,.18);
+  --shadow: 0 10px 28px rgba(22,50,41,.12);
+  --fab-shadow: 0 6px 18px rgba(38,116,95,.24);
   --bar-track: #E2EEE7;
   --font-ui: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: "Bricolage Grotesque", "Figtree", system-ui, -apple-system, sans-serif;
@@ -361,7 +361,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   box-shadow: 0 4px 14px rgba(120,30,70,.08);
   transition: box-shadow .15s, transform .12s;
 }
-.google-btn:hover { box-shadow: 0 6px 20px rgba(120,30,70,.16); }
+.google-btn:hover { box-shadow: 0 6px 20px rgba(22,50,41,.12); }
 .google-btn:active { transform: scale(.98); }
 .google-btn:disabled { opacity: .6; cursor: default; }
 .google-btn svg { width: 22px; height: 22px; flex: none; }
