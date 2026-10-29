@@ -444,3 +444,27 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 
 .v2-section-title{font-size:15px;margin:18px 0 5px;font-weight:750}
 .v2-markpaid{grid-column:1/-1;justify-self:start;background:#e2eee5;color:#20533c;border-radius:10px;padding:9px 12px;font-weight:700;font-size:13px}
+
+/* Família ocupa a área útil inteira, sem o corte de 52vh. */
+.app.family-view .v2-overview{
+ flex:1 1 auto;
+ min-height:0;
+ max-height:none;
+ overflow-x:hidden;
+ overflow-y:auto;
+ overscroll-behavior-y:contain;
+ -webkit-overflow-scrolling:touch;
+ border-bottom:0;
+ padding:18px 16px calc(32px + env(safe-area-inset-bottom,0px));
+}
+.app.family-view .list,.app.family-view .summary{display:none!important}
+.app.family-view .v2-balance{padding:20px;border-radius:18px}
+.app.family-view .v2-balance strong{font-size:clamp(30px,9vw,37px)}
+.app.family-view .v2-balance span{line-height:1.5}
+.app.family-view .v2-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.app.family-view .v2-actions button{min-width:0;min-height:48px;text-align:center;white-space:normal}
+.app.family-view #v2Families{grid-column:1/-1;background:transparent;border:1px solid var(--line);color:var(--ink)}
+.app.family-view .v2-month-summary{margin:16px 0;padding:17px}
+.app.family-view .v2-month-summary small{line-height:1.5}
+.app.family-view .v2-section-title{margin:22px 0 8px}
+@media(max-width:360px){.app.family-view .v2-overview{padding-inline:12px}}
