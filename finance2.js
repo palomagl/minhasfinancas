@@ -116,7 +116,7 @@ function editFamilyEntry(type,id){
  $("#v2Form").onsubmit=async e=>{
   e.preventDefault();
   const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),date=formValue("v2EditDate"),chosen=formValue("v2EditPerson");
-  if(!(amount>0&&amount<=99999999999&&description.length<=80&&description&&/^\\d{4}-\\d{2}-\\d{2}$/.test(date)&&chosen))return notify("Revise os dados informados.");
+  if(!(amount>0&&amount<=99999999999&&description.length<=80&&description&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&chosen))return notify("Revise os dados informados.");
   const btn=$("#v2Form .v2-primary");btn.disabled=true;btn.textContent="Salvando…";
   const name=chosen==="shared"?"Pagamos juntos":members.find(m=>m.id===chosen)?.name||"Membro";
   const patch=isIncome?{amount,description,date,personId:chosen,personName:name}:{amount,description,date,payerId:chosen,payerName:name};
