@@ -72,7 +72,7 @@ service cloud.firestore {
      && request.resource.data.date is string
      && request.resource.data.personId in get(/databases/$(database)/documents/v2_families/$(fid)).data.memberIds
      && request.resource.data.personName is string;
-    allow delete: if false;
+    allow delete: if member(fid);
    }
    match /expenses/{id} {
     allow read: if member(fid);
@@ -102,7 +102,7 @@ service cloud.firestore {
      && request.resource.data.date is string
      && request.resource.data.payerName is string
      && (request.resource.data.payerId == 'shared' || request.resource.data.payerId in get(/databases/$(database)/documents/v2_families/$(fid)).data.memberIds);
-    allow delete: if false;
+    allow delete: if member(fid);
    }
   }
  }
