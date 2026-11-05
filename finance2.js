@@ -26,17 +26,19 @@ function paidTotal(){return months.flatMap(x=>x.items||[]).filter(x=>x.paid).red
 function personalBalance(){return availableBalance(movements,months);}
 function updateOverview(){
  overview.hidden=!user;if(!user)return;
+ const previousScroll=overview.scrollTop;
  const hasFamily=!!familyId, person=mode==="personal"&&!families.length;
  const income=movements.filter(x=>x.kind==="income").reduce((a,x)=>a+x.amount,0);
  const {income:familyMoney,paid:familyPaid}=householdBalance(familyIncomes,familyExpenses);
  overview.innerHTML=(families.length?"":'<div class="v2-mode"><button id="v2Family" class="'+(!person?"selected":"")+'">Família</button><button id="v2Personal" class="'+(person?"selected":"")+'">Pessoal</button></div>')+
  (person?'<div class="v2-balance"><small>Meu saldo pessoal</small><strong>'+brl(personalBalance())+'</strong><span>Entradas pessoais: '+brl(income)+' · Despesas pagas: '+brl(paidTotal())+'</span></div><div class="v2-actions"><button id="v2Income">+ Entrada</button><button id="v2Adjust">Ajustar saldo</button><button id="v2History">Histórico</button></div>':
- '<div class="v2-balance"><small>Saldo disponível da família</small><strong>'+brl(familyMoney-familyPaid)+'</strong><span class="v2-family-name">'+escapeHtml(families.find(f=>f.id===familyId)?.name||"Minha família")+'</span><div class="v2-balance-details"><span>Recebido <b>'+brl(familyMoney)+'</b></span><span>Pago <b>'+brl(familyPaid)+'</b></span></div></div><div class="v2-actions">'+(hasFamily?'<button id="v2FamilyIncome">+ Entrada</button><button id="v2NewFamilyExpense">+ Despesa</button>':'')+'<button id="v2Families">'+(hasFamily?'Gerenciar família':'Criar ou entrar na família')+'</button></div><div id="v2FamilyList"></div>');
+ '<div class="v2-balance"><small>Saldo disponível da família</small><strong>'+brl(familyMoney-familyPaid)+'</strong><span class="v2-family-name">'+escapeHtml(families.find(f=>f.id===familyId)?.name||"Minha família")+'</span>'+(hasFamily?'<button id="v2Families" type="button" class="v2-balance-manage">Pessoas e convites ›</button>':'')+'<div class="v2-balance-details"><span>Recebido <b>'+brl(familyMoney)+'</b></span><span>Pago <b>'+brl(familyPaid)+'</b></span></div></div><div class="v2-actions">'+(hasFamily?'<button id="v2FamilyIncome">+ Entrada</button><button id="v2NewFamilyExpense">+ Conta</button>':'<button id="v2Families">Criar ou entrar na família</button>')+'</div><div id="v2FamilyList"></div>');
  if(!families.length){$("#v2Personal").onclick=()=>switchMode("personal");$("#v2Family").onclick=()=>switchMode("family");}
  if(person){$("#v2Income").onclick=incomeForm;$("#v2Adjust").onclick=adjustForm;$("#v2History").onclick=historyView;}
  else{ $("#v2Families").onclick=familyManager;if(hasFamily){$("#v2FamilyIncome").onclick=familyIncomeForm;$("#v2NewFamilyExpense").onclick=familyExpenseForm;}renderFamilyList();}
  $("#app").classList.toggle("family-view",!person);
  $("#addBtn").hidden=!person;$("#list").hidden=!person;$("#app .summary").hidden=!person;$("#app .month").hidden=false;
+ overview.scrollTop=previousScroll;
 }
 function switchMode(m){mode=m;updateOverview();}
 // Month navigation is shared by Pessoal and Família.
