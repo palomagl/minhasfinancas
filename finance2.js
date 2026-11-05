@@ -126,11 +126,12 @@ function editFamilyEntry(type,id){
  if(!item)return notify("Registro não encontrado.");
  const people=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
  const personId=isIncome?item.personId:item.payerId;
- show(isIncome?"Editar entrada":"Editar despesa",'<form id="v2Form"><label>Descrição<input id="v2Desc" maxlength="80" required></label>'+moneyInput("Valor (R$)")+'<label>Data<input id="v2EditDate" type="date" required></label><label>'+(isIncome?"De quem é a entrada?":"Quem pagou ou vai pagar?")+'<select id="v2EditPerson">'+people+(isIncome?"":'<option value="shared">Pagamos juntos</option>')+'</select></label><button class="v2-primary">Salvar alterações</button></form>');
+ show(isIncome?"Editar entrada":"Editar conta",'<form id="v2Form">'+moneyInput("Valor (R$)")+'<label>Descrição<input id="v2Desc" maxlength="80" required></label><label>'+(isIncome?"Quem recebeu?":"Quem pagou ou vai pagar?")+'<select id="v2EditPerson">'+people+(isIncome?"":'<option value="shared">Pagamos juntos</option>')+'</select></label><details class="v2-advanced"><summary>Alterar data</summary><label>Data<input id="v2EditDate" type="date" required></label></details><button class="v2-primary">Salvar alterações</button></form><button type="button" id="v2DeleteFromEdit" class="v2-delete-link">Apagar este lançamento</button>');
  $("#v2Desc").value=item.description||"";
  $("#v2Amount").value=(item.amount/100).toFixed(2).replace(".",",");
  $("#v2EditDate").value=item.date||today();
  $("#v2EditPerson").value=personId||members[0]?.id||"";
+ $("#v2DeleteFromEdit").onclick=()=>confirmDeleteFamilyEntry(type,id);
  $("#v2Form").onsubmit=async e=>{
   e.preventDefault();
   const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),date=formValue("v2EditDate"),chosen=formValue("v2EditPerson");
