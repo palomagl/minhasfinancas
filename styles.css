@@ -573,3 +573,21 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .app.family-view .v2-overview { grid-template-columns: minmax(255px, .95fr) minmax(0, 1.15fr); column-gap: 16px; padding-inline: 20px; }
   .app.family-view #v2FamilyList { padding-inline: 15px; }
 }
+
+/* Mobile-first: one useful summary instead of duplicated totals. */
+.app.family-view .v2-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:20px;margin-bottom:8px}
+.app.family-view .v2-section-head .v2-section-title{margin:0}
+.app.family-view .v2-pending-total,.app.family-view .v2-income-total{font-size:12px;font-weight:700;text-align:right;white-space:nowrap}
+.app.family-view .v2-pending-total{color:#94651e}
+.app.family-view .v2-income-total{color:#217354}
+.app.family-view .v2-item-more{font-weight:700}
+.v2-danger-action,.v2-danger-confirm{min-height:48px;width:100%;border:1px solid #ead0cb;border-radius:12px;font-weight:700}
+.v2-danger-action{color:#a43d32;background:#fff5f3}
+.v2-danger-confirm{color:#fff;background:#ae3f34;border-color:#ae3f34}
+.v2-danger-confirm:disabled{opacity:.6}
+.v2-delete-confirm{display:flex;flex-direction:column;gap:12px}
+.v2-delete-confirm p{margin:0;line-height:1.55}
+.v2-delete-confirm .v2-helper{color:var(--muted)}
+#v2CancelDelete{min-height:46px;font-weight:650}
+.v2-danger-action:focus-visible,.v2-danger-confirm:focus-visible{outline:3px solid #e7a09a;outline-offset:2px}
+@media(max-width:370px){.app.family-view .v2-section-head{align-items:flex-start}.app.family-view .v2-pending-total{white-space:normal}}
