@@ -89,7 +89,7 @@ function renderFamilyList(){
   const done=x.paid===true;
   return '<div class="v2-family-item"><b>'+escapeHtml(x.description)+'</b><strong>'+brl(x.amount)+'</strong><small class="'+(done?'v2-paid-status':'v2-pending-status')+'">'+(done?'✓ Pago por '+escapeHtml(x.payerName||"Membro"):'● Pendente · '+escapeHtml(x.date||""))+'</small><button class="v2-item-more" data-menu-expense="'+escapeHtml(x.id)+'" aria-label="Opções da despesa" aria-haspopup="dialog">⋯</button>'+(!done?'<button class="v2-markpaid" data-paid="'+escapeHtml(x.id)+'">✓ Registrar pagamento</button>':'')+'</div>';
  }).join("");
- el.innerHTML='<div class="v2-month-summary"><span>Resumo de '+escapeHtml(month)+'</span><div class="v2-summary-grid"><div><small>Entradas</small><strong>'+brl(incomeTotal)+'</strong></div><div><small>Contas pagas</small><strong>'+brl(paid)+'</strong></div><div><small>A pagar</small><strong>'+brl(due-paid)+'</strong></div></div></div><h3 class="v2-section-title">Entradas</h3>'+(entries||'<p class="v2-empty">Nenhuma entrada neste mês.</p>')+'<h3 class="v2-section-title">Contas da casa</h3>'+(bills||'<p class="v2-empty">Nenhuma conta neste mês.</p>');
+ el.innerHTML='<div class="v2-section-head"><h3 class="v2-section-title">Contas da casa</h3><span class="v2-pending-total">'+(due-paid>0?'A pagar: '+brl(due-paid):'Tudo pago ✓')+'</span></div>'+(bills||'<p class="v2-empty">Nenhuma conta neste mês.</p>')+'<div class="v2-section-head"><h3 class="v2-section-title">Entradas</h3><span class="v2-income-total">'+brl(incomeTotal)+'</span></div>'+(entries||'<p class="v2-empty">Nenhuma entrada neste mês.</p>');
  el.querySelectorAll("[data-paid]").forEach(btn=>btn.onclick=()=>markFamilyPaid(btn.dataset.paid));
  el.querySelectorAll("[data-menu-income]").forEach(btn=>btn.onclick=()=>entryActions("incomes",btn.dataset.menuIncome));
  el.querySelectorAll("[data-menu-expense]").forEach(btn=>btn.onclick=()=>entryActions("expenses",btn.dataset.menuExpense));
@@ -98,9 +98,29 @@ function entryActions(type,id){
  const isIncome=type==="incomes";
  const item=(isIncome?familyIncomes:familyExpenses).find(x=>x.id===id);
  if(!item)return notify("Lançamento não encontrado.");
- show("Opções do lançamento",'<div class="v2-entry-actions"><div class="v2-entry-detail"><strong>'+escapeHtml(item.description)+'</strong><span>'+brl(item.amount)+'</span></div><button id="v2ActionEdit" class="v2-primary">✎ Editar informações</button><button id="v2ActionClose">Cancelar</button></div>');
+ show("O que deseja fazer?",'<div class="v2-entry-actions"><div class="v2-entry-detail"><strong>'+escapeHtml(item.description)+'</strong><span>'+brl(item.amount)+'</span></div><button id="v2ActionEdit" class="v2-primary">Editar lançamento</button><button id="v2ActionDelete" class="v2-danger-action">Apagar lançamento</button><button id="v2ActionClose">Cancelar</button></div>');
  $("#v2ActionEdit").onclick=()=>editFamilyEntry(type,id);
+ $("#v2ActionDelete").onclick=()=>confirmDeleteFamilyEntry(type,id);
  $("#v2ActionClose").onclick=()=>root.hidden=true;
+}
+function confirmDeleteFamilyEntry(type,id){
+ const isIncome=type==="incomes";
+ const item=(isIncome?familyIncomes:familyExpenses).find(x=>x.id===id);
+ if(!item)return notify("Este lançamento não está mais disponível.");
+ const category=isIncome?"entrada":"despesa";
+ show("Apagar "+category+"?",'<div class="v2-delete-confirm"><p>Tem certeza que quer apagar <strong>'+escapeHtml(item.description)+'</strong> de <strong>'+brl(item.amount)+'</strong>?</p><p class="v2-helper">Isso remove o lançamento do saldo compartilhado e dos celulares da família. Não é possível desfazer.</p><button id="v2ConfirmDelete" class="v2-danger-confirm">Sim, apagar</button><button id="v2CancelDelete">Manter lançamento</button></div>');
+ $("#v2CancelDelete").onclick=()=>root.hidden=true;
+ $("#v2ConfirmDelete").onclick=async()=>{
+  const button=$("#v2ConfirmDelete");button.disabled=true;button.textContent="Apagando…";
+  try{
+   await deleteDoc(doc(db,"v2_families",familyId,type,id));
+   root.hidden=true;notify("Lançamento apagado.");
+  }catch(err){
+   console.error("Apagar lançamento:",err);
+   button.disabled=false;button.textContent="Sim, apagar";
+   notify(err?.code==="permission-denied"?"Sem permissão para apagar. Confira as regras do Firebase.":"Não foi possível apagar. Confira sua conexão.");
+  }
+ };
 }
 function editFamilyEntry(type,id){
  const isIncome=type==="incomes";
