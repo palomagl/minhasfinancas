@@ -145,8 +145,10 @@ function editFamilyEntry(type,id){
 }
 function familyIncomeForm(){
  if(!familyId)return familyManager();
+ if(!members.length)return notify("Carregando participantes. Tente novamente.");
  const options=members.map(m=>'<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.name||"Membro")+'</option>').join("");
- show("Entrada da família",'<p class="v2-helper">O dinheiro recebido entra no saldo único da família.</p><form id="v2Form">'+moneyInput("Quanto entrou? (R$)")+'<label>Descrição<input id="v2Desc" maxlength="80" placeholder="Salário, Pix, extra..." required></label><label>Data da entrada<input id="v2IncomeDate" type="date" value="'+(today().startsWith(selectedMonth())?today():selectedMonth()+"-01")+'" required></label><label>De quem é a entrada?<select id="v2Person">'+options+'</select></label><button class="v2-primary">Salvar entrada</button></form>');
+ show("Adicionar dinheiro",'<form id="v2Form">'+moneyInput("Quanto entrou? (R$)")+'<label>De onde veio?<input id="v2Desc" maxlength="80" placeholder="Salário, Pix, venda..." required></label><label>Quem recebeu?<select id="v2Person">'+options+'</select></label><details class="v2-advanced"><summary>Alterar data</summary><label>Data da entrada<input id="v2IncomeDate" type="date" value="'+(today().startsWith(selectedMonth())?today():selectedMonth()+"-01")+'" required></label></details><button class="v2-primary">Adicionar entrada</button></form>');
+ $("#v2Person").value=members.some(m=>m.id===user.uid)?user.uid:members[0].id;
  $("#v2Form").onsubmit=async e=>{e.preventDefault();const amount=toCents(formValue("v2Amount")),description=formValue("v2Desc"),personId=formValue("v2Person"),incomeDate=formValue("v2IncomeDate");if(!(amount>0&&amount<=99999999999&&description&&personId&&/^\d{4}-\d{2}-\d{2}$/.test(incomeDate)))return notify("Preencha valor, descrição e pessoa.");
  const btn=$("#v2Form .v2-primary");btn.disabled=true;btn.textContent="Salvando…";
  try{await addDoc(collection(db,"v2_families",familyId,"incomes"),{amount,description,personId,personName:members.find(m=>m.id===personId)?.name||"Membro",date:incomeDate,createdBy:user.uid,createdAt:serverTimestamp()});root.hidden=true;notify("Entrada adicionada ao saldo da família.");}
